@@ -1,0 +1,33 @@
+name: Validate GeoPulse
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check app.js
+          node --check netlify/functions/flights.js
+
+      - name: Check required files
+        run: |
+          test -f index.html
+          test -f styles.css
+          test -f assets/geopulse-mark.svg
+          test -f docs/DATA_SOURCES.md
