@@ -17,6 +17,8 @@
   let satelliteRecords = [];
   let satellitePoints = null;
   let satelliteBatchCursor = 0;
+  let satelliteByNorad = new Map();
+  let inspectorRequestId = 0;
   let searchMarker;
   let shipCameraTimer;
   let flightCameraTimer;
@@ -160,6 +162,242 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  function cleanValue(value, fallback = "—") {
+    if (value === null || value === undefined || value === "") return fallback;
+    if (typeof value === "number" && !Number.isFinite(value)) return fallback;
+    return String(value);
+  }
+
+  function formatCoordinate(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n.toFixed(5) + "°" : "—";
+  }
+
+  function formatAltitude(meters) {
+    const n = Number(meters);
+    if (!Number.isFinite(n)) return "—";
+    const feet = n * 3.28084;
+    return Math.round(feet).toLocaleString() + " ft · " + Math.round(n).toLocaleString() + " m";
+  }
+
+  function formatVelocity(mps) {
+    const n = Number(mps);
+    if (!Number.isFinite(n)) return "—";
+    return (n * 1.94384).toFixed(1) + " kt · " + (n * 2.23694).toFixed(1) + " mph";
+  }
+
+  function formatKnots(knots) {
+    const n = Number(knots);
+    if (!Number.isFinite(n)) return "—";
+    return n.toFixed(1) + " kt · " + (n * 1.15078).toFixed(1) + " mph";
+  }
+
+  function formatDegrees(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n.toFixed(1) + "°" : "—";
+  }
+
+  function formatUtcEpoch(seconds) {
+    const n = Number(seconds);
+    if (!Number.isFinite(n) || n <= 0) return "—";
+    return new Date(n * 1000).toISOString().replace("T", " ").replace(".000Z", " UTC");
+  }
+
+  function navStatusLabel(code) {
+    const labels = {
+      0: "Under way using engine",
+      1: "At anchor",
+      2: "Not under command",
+      3: "Restricted manoeuvrability",
+      4: "Constrained by draught",
+      5: "Moored",
+      6: "Aground",
+      7: "Fishing",
+      8: "Under way sailing",
+      14: "AIS-SART / active safety"
+    };
+    const n = Number(code);
+    return Number.isFinite(n) ? (labels[n] || "AIS status " + n) : "—";
+  }
+
+  function fieldHtml(label, value, wide = false) {
+    return '<div class="object-field' + (wide ? ' wide' : '') + '">' +
+      '<small>' + escapeHtml(label) + '</small>' +
+      '<strong>' + escapeHtml(cleanValue(value)) + '</strong>' +
+    '</div>';
+  }
+
+  function showObjectInspector(config) {
+    const panel = $("objectInspector");
+    if (!panel) return;
+    $("objectType").textContent = config.type || "OBJECT";
+    $("objectName").textContent = config.name || "Unknown object";
+    $("objectStatus").textContent = config.status || "DATA";
+    const dot = $("objectStatusDot");
+    dot.classList.remove("modeled", "stale");
+    if (config.mode === "modeled") dot.classList.add("modeled");
+    if (config.mode === "stale") dot.classList.add("stale");
+    $("objectFields").innerHTML = (config.fields || []).map((item) =>
+      fieldHtml(item.label, item.value, Boolean(item.wide))
+    ).join("");
+    $("objectSource").textContent = "Source · " + (config.source || "—");
+    $("objectUpdated").textContent = config.updated ? "Updated · " + config.updated : "Updated · —";
+    panel.hidden = false;
+  }
+
+  function inspectAircraft(info) {
+    const altitude = Number.isFinite(Number(info.geoAltitude)) ? info.geoAltitude : info.baroAltitude;
+    const fields = [
+      { label: "Callsign", value: info.callsign || "—" },
+      { label: "ICAO 24-bit", value: info.icao24 ? String(info.icao24).toUpperCase() : "—" },
+      { label: "Registration", value: info.registration || "—" },
+      { label: "Aircraft type", value: info.aircraftType || info.description || "—" },
+      { label: "Altitude", value: info.onGround ? "On ground" : formatAltitude(altitude) },
+      { label: "Speed", value: formatVelocity(info.velocity) },
+      { label: "Track", value: formatDegrees(info.track) },
+      { label: "Vertical rate", value: Number.isFinite(Number(info.verticalRate)) ? Number(info.verticalRate).toFixed(1) + " m/s" : "—" },
+      { label: "Latitude", value: formatCoordinate(info.latitude) },
+      { label: "Longitude", value: formatCoordinate(info.longitude) },
+      { label: "Squawk", value: info.squawk || "—" },
+      { label: "Country", value: info.originCountry || "—" },
+      { label: "Emergency", value: info.emergency || "None reported" },
+      { label: "Feed age", value: Number.isFinite(Number(info.seenSeconds)) ? Number(info.seenSeconds).toFixed(1) + " s" : "—" }
+    ];
+    showObjectInspector({
+      type: "LIVE AIRCRAFT",
+      name: info.callsign || info.registration || (info.icao24 ? String(info.icao24).toUpperCase() : "Aircraft"),
+      status: (info.stale ? "STALE LAST-GOOD DATA" : "LIVE POSITION") + (info.coverage ? " · " + info.coverage : ""),
+      mode: info.stale ? "stale" : "live",
+      source: info.source || "Aircraft feed",
+      updated: info.fetchedAt ? formatAge(Date.parse(info.fetchedAt)) : "recent",
+      fields
+    });
+  }
+
+  function inspectShip(info) {
+    const fields = [
+      { label: "Vessel name", value: info.name || "AIS vessel", wide: true },
+      { label: "MMSI", value: info.mmsi || "—" },
+      { label: "IMO", value: info.imo || "—" },
+      { label: "Call sign", value: info.callSign || "—" },
+      { label: "Ship type", value: info.shipType ?? "—" },
+      { label: "Speed over ground", value: formatKnots(info.speed) },
+      { label: "Course over ground", value: formatDegrees(info.course) },
+      { label: "Heading", value: formatDegrees(info.heading) },
+      { label: "Navigation", value: navStatusLabel(info.navigationalStatus), wide: true },
+      { label: "Latitude", value: formatCoordinate(info.latitude) },
+      { label: "Longitude", value: formatCoordinate(info.longitude) },
+      { label: "Destination", value: info.destination || "—", wide: true },
+      { label: "Draught", value: Number.isFinite(Number(info.draught)) ? Number(info.draught).toFixed(1) + " m" : "—" },
+      { label: "AIS UTC second", value: Number.isFinite(Number(info.aisTimestampSecond)) ? info.aisTimestampSecond : "—" }
+    ];
+    showObjectInspector({
+      type: "LIVE SHIP",
+      name: info.name || "AIS vessel",
+      status: "LIVE AIS VIEWPORT SNAPSHOT",
+      source: info.source || "AISStream",
+      updated: info.fetchedAt ? formatAge(Date.parse(info.fetchedAt)) : (info.receivedAt ? formatAge(Date.parse(info.receivedAt)) : "recent"),
+      fields
+    });
+  }
+
+  async function inspectSatellite(pickedId) {
+    const norad = String(pickedId.norad || "");
+    const record = satelliteByNorad.get(norad);
+    const pos = record ? satellitePosition(record, new Date()) : null;
+    const requestId = ++inspectorRequestId;
+
+    showObjectInspector({
+      type: "SATELLITE",
+      name: pickedId.name || (record && record.raw && record.raw.n) || ("NORAD " + norad),
+      status: "MODELED CURRENT POSITION · LOADING CATALOG INFO…",
+      mode: "modeled",
+      source: "CelesTrak + SGP4",
+      updated: "now",
+      fields: [
+        { label: "NORAD catalog", value: norad },
+        { label: "Latitude", value: pos ? formatCoordinate(pos.lat) : "—" },
+        { label: "Longitude", value: pos ? formatCoordinate(pos.lon) : "—" },
+        { label: "Altitude", value: pos ? (pos.height / 1000).toFixed(1) + " km" : "—" }
+      ]
+    });
+
+    try {
+      const response = await fetch("/.netlify/functions/satellite-info?catnr=" + encodeURIComponent(norad), { cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      if (requestId !== inspectorRequestId) return;
+      if (!response.ok) throw new Error(data.error || "Satellite metadata unavailable");
+
+      const c = data.catalog || {};
+      const o = data.orbital || {};
+      const current = record ? satellitePosition(record, new Date()) : pos;
+      const fields = [
+        { label: "NORAD catalog", value: c.NORAD_CAT_ID || o.NORAD_CAT_ID || norad },
+        { label: "International designator", value: c.OBJECT_ID || o.OBJECT_ID || "—" },
+        { label: "Object type", value: c.OBJECT_TYPE || "Payload" },
+        { label: "Owner/operator code", value: c.OWNER || "—" },
+        { label: "Operational status", value: c.OPS_STATUS_CODE || "—" },
+        { label: "Launch date", value: c.LAUNCH_DATE || "—" },
+        { label: "Launch site", value: c.LAUNCH_SITE || "—" },
+        { label: "Orbital period", value: Number.isFinite(Number(c.PERIOD)) ? Number(c.PERIOD).toFixed(2) + " min" : "—" },
+        { label: "Inclination", value: Number.isFinite(Number(c.INCLINATION ?? o.INCLINATION)) ? Number(c.INCLINATION ?? o.INCLINATION).toFixed(2) + "°" : "—" },
+        { label: "Apogee", value: Number.isFinite(Number(c.APOGEE)) ? Number(c.APOGEE).toLocaleString() + " km" : "—" },
+        { label: "Perigee", value: Number.isFinite(Number(c.PERIGEE)) ? Number(c.PERIGEE).toLocaleString() + " km" : "—" },
+        { label: "Eccentricity", value: o.ECCENTRICITY ?? "—" },
+        { label: "Latitude now", value: current ? formatCoordinate(current.lat) : "—" },
+        { label: "Longitude now", value: current ? formatCoordinate(current.lon) : "—" },
+        { label: "Altitude now", value: current ? (current.height / 1000).toFixed(1) + " km" : "—" }
+      ];
+
+      showObjectInspector({
+        type: "SATELLITE",
+        name: c.OBJECT_NAME || o.OBJECT_NAME || pickedId.name || ("NORAD " + norad),
+        status: "MODELED CURRENT POSITION",
+        mode: "modeled",
+        source: data.source || "CelesTrak SATCAT + GP",
+        updated: data.fetchedAt ? formatAge(Date.parse(data.fetchedAt)) : "recent",
+        fields
+      });
+    } catch (error) {
+      if (requestId !== inspectorRequestId) return;
+      const panel = $("objectStatus");
+      if (panel) panel.textContent = "MODELED POSITION · CATALOG INFO UNAVAILABLE";
+    }
+  }
+
+  function inspectPickedObject(picked) {
+    if (!picked) return false;
+
+    const entity = picked.id && typeof picked.id === "object" && picked.id._geopulseInfo
+      ? picked.id
+      : null;
+    if (entity && entity._geopulseInfo) {
+      const info = entity._geopulseInfo;
+      if (info.type === "aircraft") inspectAircraft(info.data);
+      else if (info.type === "ship") inspectShip(info.data);
+      return true;
+    }
+
+    const pointId = picked.id && picked.id.type === "satellite" ? picked.id : null;
+    if (pointId) {
+      inspectSatellite(pointId);
+      return true;
+    }
+    return false;
+  }
+
+  function bindObjectPicking() {
+    $("objectClose").addEventListener("click", () => {
+      inspectorRequestId += 1;
+      $("objectInspector").hidden = true;
+    });
+
+    viewer.screenSpaceEventHandler.setInputAction((movement) => {
+      const picked = viewer.scene.pick(movement.position);
+      inspectPickedObject(picked);
+    }, C.ScreenSpaceEventType.LEFT_CLICK);
   }
 
   function showNotice(message, duration = 4000) {
@@ -468,18 +706,28 @@
           ? Math.max(120, flight.geoAltitude)
           : Number.isFinite(flight.baroAltitude) ? Math.max(120, flight.baroAltitude) : 1000;
 
-        layers.flights.entities.add({
+        const entity = layers.flights.entities.add({
           id: "flight-" + (flight.icao24 || index),
-          name: (flight.callsign || flight.icao24 || "Aircraft").trim(),
+          name: (flight.callsign || flight.registration || flight.icao24 || "Aircraft").trim(),
           position: C.Cartesian3.fromDegrees(flight.longitude, flight.latitude, altitude),
           billboard: {
-            image: planeSvg, width: 16, height: 16,
+            image: planeSvg, width: 18, height: 18,
             rotation: C.Math.toRadians(-Number(flight.track || 0)),
             alignedAxis: C.Cartesian3.ZERO,
             disableDepthTestDistance: 9000000,
             distanceDisplayCondition: new C.DistanceDisplayCondition(0, 15000000)
           }
         });
+        entity._geopulseInfo = {
+          type: "aircraft",
+          data: {
+            ...flight,
+            source: data.source || "Aircraft feed",
+            coverage: data.coverage || scope,
+            fetchedAt: data.fetchedAt || new Date().toISOString(),
+            stale: Boolean(data.stale)
+          }
+        };
       });
 
       $("flightCount").textContent = Number(data.count || 0).toLocaleString();
@@ -490,7 +738,7 @@
       return true;
     } catch (error) {
       if (!silent) console.warn("Aircraft source unavailable", error);
-      setStatus("flightsStatus", "OpenSky unavailable / rate-limited");
+      setStatus("flightsStatus", "Live aircraft source unavailable");
       setHealth("openskyHealth", "bad");
       $("flightCount").textContent = "—";
       return false;
@@ -555,6 +803,7 @@
       if (!satellitePoints) throw new Error("Satellite renderer unavailable");
       satellitePoints.removeAll();
       satelliteRecords = [];
+      satelliteByNorad = new Map();
       satelliteBatchCursor = 0;
 
       const now = new Date();
@@ -577,6 +826,7 @@
           });
           record.point = point;
           satelliteRecords.push(record);
+          satelliteByNorad.set(String(raw.id), record);
         } catch {}
       });
 
@@ -584,7 +834,7 @@
       $("satelliteCount").textContent = satelliteRecords.length.toLocaleString();
       setStatus(
         "satellitesStatus",
-        satelliteRecords.length.toLocaleString() + " ACTIVE · CelesTrak · TLE " + formatAge(Date.parse(data.fetchedAt))
+        satelliteRecords.length.toLocaleString() + " trackable · CelesTrak GP/TLE · " + formatAge(Date.parse(data.fetchedAt))
       );
       setHealth("celestrakHealth", satelliteRecords.length > 1000 ? "good" : "warn");
       return true;
@@ -770,23 +1020,32 @@
         const lat = Number(ship.latitude);
         const lon = Number(ship.longitude);
         if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-        layers.ships.entities.add({
+        const entity = layers.ships.entities.add({
           id: "ship-" + (ship.mmsi || index),
           name: ship.name || "AIS vessel",
           position: C.Cartesian3.fromDegrees(lon, lat, 5),
           billboard: {
             image: shipSvg,
-            width: 16,
-            height: 16,
+            width: 18,
+            height: 18,
             rotation: C.Math.toRadians(-Number(ship.course || 0)),
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
             distanceDisplayCondition: new C.DistanceDisplayCondition(0, 7000000)
           }
         });
+        entity._geopulseInfo = {
+          type: "ship",
+          data: {
+            ...ship,
+            source: data.source || "AISStream",
+            coverage: data.coverage || "live viewport snapshot",
+            fetchedAt: data.fetchedAt || new Date().toISOString()
+          }
+        };
       });
 
       $("shipCount").textContent = Number(data.count || 0).toLocaleString();
-      setStatus("shipsStatus", Number(data.count || 0).toLocaleString() + " live AIS positions · " + formatAge(Date.parse(data.fetchedAt)));
+      setStatus("shipsStatus", Number(data.count || 0).toLocaleString() + " · AISStream live viewport · " + formatAge(Date.parse(data.fetchedAt)));
       setHealth("aisHealth", "good");
       return true;
     } catch (error) {
@@ -903,6 +1162,7 @@
     });
 
     $("mapStyle").addEventListener("change", (event) => setBasemap(event.target.value));
+    bindObjectPicking();
     $("searchButton").addEventListener("click", runSearch);
 
     const creditsModal = $("creditsModal");
@@ -917,7 +1177,11 @@
     });
     $("locationSearch").addEventListener("keydown", (event) => {
       if (event.key === "Enter") runSearch();
-      if (event.key === "Escape") $("searchResults").hidden = true;
+      if (event.key === "Escape") {
+        $("searchResults").hidden = true;
+        inspectorRequestId += 1;
+        $("objectInspector").hidden = true;
+      }
     });
 
     document.addEventListener("click", (event) => {
@@ -1079,7 +1343,7 @@
     }
 
     try {
-      setProgress(4, "Booting GeoPulse v0.4…");
+      setProgress(4, "Booting GeoPulse v0.5…");
       await createViewer();
       addTradeRoutes();
       bindControls();
@@ -1105,7 +1369,7 @@
       $("lastRefresh").textContent = "Core sync " + new Date().toLocaleTimeString();
 
       setTimeout(() => {
-        setProgress(100, "GeoPulse v0.4 online");
+        setProgress(100, "GeoPulse v0.5 online");
         app.classList.add("ready");
         app.setAttribute("aria-hidden", "false");
         setTimeout(() => loadingScreen.classList.add("done"), 420);
