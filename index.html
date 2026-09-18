@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#020812" />
   <meta name="description" content="GeoPulse — live and near-live Earth intelligence across aircraft, satellites, disasters, ships, conflict-related reporting and global events." />
-  <title>GeoPulse v0.4 — Live Earth Intelligence</title>
+  <title>GeoPulse v0.5 — Live Earth Intelligence</title>
   <link rel="icon" href="assets/geopulse-mark.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://cesium.com" />
   <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.145/Build/Cesium/Widgets/widgets.css" />
@@ -19,7 +19,7 @@
     <div class="loading-core">
       <img class="loading-logo" src="assets/geopulse-mark.svg" alt="GeoPulse" />
       <h1><span>Geo</span><strong>Pulse</strong></h1>
-      <p class="loading-tagline">LIVE EARTH INTELLIGENCE · v0.4</p>
+      <p class="loading-tagline">LIVE EARTH INTELLIGENCE · v0.5</p>
       <div class="loading-progress-track"><div id="loadingProgress" class="loading-progress"></div></div>
       <div class="loading-meta">
         <span id="loadingPercent">0%</span>
@@ -35,7 +35,7 @@
         <div>
           <div class="brand-line">
             <div class="brand-name"><span>Geo</span><strong>Pulse</strong></div>
-            <span class="version-badge">v0.4</span>
+            <span class="version-badge">v0.5</span>
           </div>
           <div class="brand-sub">LIVE EARTH INTELLIGENCE</div>
         </div>
@@ -155,9 +155,28 @@
 
         <div id="searchNotice" class="search-notice" hidden></div>
 
+        <aside id="objectInspector" class="object-inspector" hidden aria-live="polite">
+          <div class="object-inspector-head">
+            <div>
+              <span id="objectType" class="object-type">LIVE OBJECT</span>
+              <h3 id="objectName">Selected object</h3>
+            </div>
+            <button id="objectClose" class="object-close" type="button" aria-label="Close object details">×</button>
+          </div>
+          <div class="object-status-row">
+            <span id="objectStatusDot" class="object-status-dot"></span>
+            <span id="objectStatus">LIVE DATA</span>
+          </div>
+          <div id="objectFields" class="object-fields"></div>
+          <div class="object-inspector-foot">
+            <span id="objectSource">Source —</span>
+            <span id="objectUpdated">Updated —</span>
+          </div>
+        </aside>
+
         <div class="stats-strip">
           <div><small>AIRCRAFT</small><strong id="flightCount">—</strong></div>
-          <div><small>ACTIVE SATELLITES</small><strong id="satelliteCount">—</strong></div>
+          <div><small>TRACKABLE SATELLITES</small><strong id="satelliteCount">—</strong></div>
           <div><small>LIVE SHIPS</small><strong id="shipCount">—</strong></div>
           <div><small>DISASTERS</small><strong id="disasterCount">—</strong></div>
           <div><small>CONFLICT REPORTS</small><strong id="conflictCount">—</strong></div>
@@ -203,7 +222,7 @@
       </div>
       <p class="credits-intro">GeoPulse separates live, near-live, scheduled, modeled, and reference data. Provider terms and coverage still apply.</p>
       <div class="credits-grid">
-        <article><b>Aircraft</b><span>OpenSky Network</span><small>Live / rate-limited</small></article>
+        <article><b>Aircraft</b><span>adsb.lol + OpenSky Network</span><small>Live regional / global fallback</small></article>
         <article><b>Satellites</b><span>CelesTrak + SGP4</span><small>Modeled position from recent orbital data</small></article>
         <article><b>Ships</b><span>AISStream</span><small>Live viewport snapshot · API key required</small></article>
         <article><b>Earthquakes</b><span>U.S. Geological Survey</span><small>Real-time feed</small></article>
