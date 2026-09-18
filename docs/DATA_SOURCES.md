@@ -21,18 +21,23 @@ GeoPulse treats freshness as a property of each layer. A moving marker is not au
 - Source: https://www.gdacs.org/gdacsapi/swagger/index.html
 - Acknowledgement: Global Disaster Awareness and Coordination System (GDACS).
 
-## OpenSky Network — Aircraft
-- GeoPulse: state vectors proxied through a Netlify Function.
+## OpenSky Network + adsb.lol — Aircraft
+- GeoPulse first requests OpenSky state vectors through a Netlify Function.
 - Fields used: callsign, position, altitude and track.
-- Optional credentials: `OPENSKY_CLIENT_ID`, `OPENSKY_CLIENT_SECRET`.
-- UI classification: **live, provider/rate-limit dependent**.
-- Source: https://opensky-network.org/data/api
+- Optional OpenSky credentials: `OPENSKY_CLIENT_ID`, `OPENSKY_CLIENT_SECRET`.
+- If OpenSky is unavailable or has no usable snapshot, GeoPulse uses the documented adsb.lol point API around the current map-view anchor with a 250-nautical-mile radius.
+- The fallback is explicitly labeled **regional fallback** and is not presented as worldwide completeness.
+- UI classification: **live, provider/rate-limit/coverage dependent**.
+- Sources: https://opensky-network.org/data/api and https://api.adsb.lol
+- adsb.lol data is ODbL 1.0.
 - Not suitable for aviation safety.
 
-## CelesTrak + satellite.js — Satellites
-- GeoPulse fetches current GP data as JSON OMM for selected CelesTrak groups.
-- The browser uses satellite.js/SGP4 to propagate current display positions from those orbital elements.
-- GeoPulse caches orbital-data requests and refreshes much less often than marker positions.
+## CelesTrak + satellite.js — Active satellites
+- GeoPulse v0.4 fetches CelesTrak's full `GROUP=ACTIVE` catalog in compact TLE form rather than a small hand-picked set of groups.
+- The browser uses satellite.js/SGP4 to propagate display positions from those orbital elements.
+- Thousands of objects are rendered through a Cesium PointPrimitiveCollection, and propagation work is updated in batches.
+- GeoPulse caches orbital-data requests for about two hours and updates display positions independently.
+- The **ACTIVE** group is not the same as every tracked payload/object/debris item in SATCAT.
 - UI classification: **modeled current position from recent orbital elements**, not a direct GPS stream from the spacecraft.
 - Source: https://celestrak.org/NORAD/documentation/gp-data-formats.php
 
@@ -74,7 +79,7 @@ GeoPulse treats freshness as a property of each layer. A moving marker is not au
 
 | Data | Client refresh target |
 | --- | ---: |
-| Satellite marker propagation | 1 second |
+| Satellite marker propagation | batched every 1 second; each loaded object cycles through updates |
 | Aircraft | 30 seconds |
 | Ships | 60 seconds / map movement |
 | USGS earthquakes | 5 minutes |
