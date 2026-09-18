@@ -48,3 +48,9 @@ jobs:
           grep -q 'GROUP=ACTIVE' netlify/functions/satellites.js
           grep -q 'api.adsb.lol' netlify/functions/flights.js
           grep -q 'earthquake|seismic' app.js
+          grep -q 'id="objectInspector"' index.html
+          grep -q 'inspectAircraft' app.js
+          grep -q 'inspectShip' app.js
+          grep -q 'inspectSatellite' app.js
+          grep -q 'satellite-info' app.js
+          test -f netlify/functions/satellite-info.js
