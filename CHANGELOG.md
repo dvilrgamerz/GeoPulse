@@ -2,6 +2,24 @@
 
 All notable GeoPulse milestones are documented here.
 
+## v0.5 — Interactive Live Objects — 2026-09-18
+
+### Added
+- Clickable **Aircraft**, **Ship**, and **Satellite** markers.
+- Slide-in GeoPulse Object Inspector with readable live/provider metadata.
+- On-demand CelesTrak SATCAT + GP lookup for selected satellites.
+- Aircraft registration, type, description, emergency and feed-age fields when supplied by adsb.lol.
+- AIS navigation status, heading, course, position accuracy and static/voyage fields when those AIS messages are observed.
+
+### Improved
+- Focused map views prefer bounded adsb.lol live aircraft data before falling back to OpenSky.
+- Aircraft and ship markers are slightly larger and easier to select.
+- Satellite count wording now says **trackable satellites** rather than implying the rendered public GP/TLE set equals all active objects in SATCAT.
+- Object panels always identify their source and data age.
+
+### Required configuration
+- Live ships still require `AISSTREAM_API_KEY`; GeoPulse does not fabricate ship positions when the key is absent.
+
 ## v0.4 — Data Scale & Reliability — 2026-09-18
 
 ### Fixed
