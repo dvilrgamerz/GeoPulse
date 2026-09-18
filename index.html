@@ -185,9 +185,44 @@
     <footer class="footerbar">
       <span><i class="dot live-dot"></i> LIVE / NEAR-LIVE / SCHEDULED DATA ARE LABELED SEPARATELY</span>
       <span id="lastRefresh">Initializing…</span>
-      <span class="footer-warning">TRADE ROUTES ARE REFERENCE CORRIDORS</span>
+      <span class="footer-actions">
+        <button id="creditsButton" class="footer-link" type="button">DATA SOURCES & LICENSES</button>
+        <span class="footer-warning">TRADE ROUTES ARE REFERENCE CORRIDORS</span>
+      </span>
     </footer>
   </main>
+
+  <div id="creditsModal" class="modal-backdrop" hidden>
+    <section class="credits-modal" role="dialog" aria-modal="true" aria-labelledby="creditsTitle">
+      <div class="credits-head">
+        <div>
+          <span class="eyebrow">TRANSPARENCY</span>
+          <h2 id="creditsTitle">GeoPulse Data Sources</h2>
+        </div>
+        <button id="creditsClose" class="modal-close" type="button" aria-label="Close">×</button>
+      </div>
+      <p class="credits-intro">GeoPulse separates live, near-live, scheduled, modeled, and reference data. Provider terms and coverage still apply.</p>
+      <div class="credits-grid">
+        <article><b>Aircraft</b><span>OpenSky Network</span><small>Live / rate-limited</small></article>
+        <article><b>Satellites</b><span>CelesTrak + SGP4</span><small>Modeled position from recent orbital data</small></article>
+        <article><b>Ships</b><span>AISStream</span><small>Live viewport snapshot · API key required</small></article>
+        <article><b>Earthquakes</b><span>U.S. Geological Survey</span><small>Real-time feed</small></article>
+        <article><b>Disasters</b><span>NASA EONET + GDACS</span><small>Near-live / source dependent</small></article>
+        <article><b>Conflict reporting</b><span>GDELT GEO</span><small>Near-live news-location signal, not GeoPulse verification</small></article>
+        <article><b>Major events</b><span>Ticketmaster Discovery</span><small>Scheduled listings · API key required</small></article>
+        <article><b>Search</b><span>ArcGIS or Photon / OpenStreetMap fallback</span><small>Provider match precision varies</small></article>
+        <article><b>Trade corridors</b><span>GeoPulse reference layer</span><small>Not live vessel telemetry</small></article>
+      </div>
+      <div class="credits-note">
+        <b>Open-source acknowledgement</b>
+        <p>GeoPulse's architecture and UX were improved after studying Bilawal Sidhu's MIT-licensed God's Eye View project. GeoPulse does not bundle its restricted datasets, third-party models, branding, or promotional media.</p>
+      </div>
+      <div class="credits-links">
+        <a href="https://github.com/dvilrgamerz/GeoPulse/blob/main/docs/DATA_SOURCES.md" target="_blank" rel="noopener">GeoPulse source notes</a>
+        <a href="https://github.com/bilawalsidhu/gods-eye-view" target="_blank" rel="noopener">God's Eye View reference</a>
+      </div>
+    </section>
+  </div>
 
   <script src="app.js"></script>
 </body>
