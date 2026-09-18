@@ -683,11 +683,12 @@
       const anchor = getViewAnchor();
       const qs = new URLSearchParams();
       let scope = "global";
-      if (anchor) {
+      const focusedView = bounds && bounds.width <= 120 && bounds.height <= 80;
+      if (anchor && focusedView) {
         qs.set("lat", anchor.lat.toFixed(4));
         qs.set("lon", anchor.lon.toFixed(4));
       }
-      if (bounds && bounds.width <= 120 && bounds.height <= 80) {
+      if (focusedView) {
         qs.set("lamin", bounds.south.toFixed(4));
         qs.set("lomin", bounds.west.toFixed(4));
         qs.set("lamax", bounds.north.toFixed(4));
