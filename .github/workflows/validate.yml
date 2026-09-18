@@ -54,3 +54,14 @@ jobs:
           grep -q 'inspectSatellite' app.js
           grep -q 'satellite-info' app.js
           test -f netlify/functions/satellite-info.js
+
+
+      - name: Package deploy source
+        uses: actions/upload-artifact@v4
+        with:
+          name: geopulse-deploy-source
+          path: |
+            .
+            !.git
+            !.github
+          include-hidden-files: true
