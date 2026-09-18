@@ -1,8 +1,22 @@
-# 🌎 GeoPulse v0.3
+# 🌎 GeoPulse v0.3.1
 
 **Live Earth Intelligence**
 
 GeoPulse is an open-source 3D Earth command center for live, near-live, scheduled, and reference global data. Every layer is independently switchable and the UI labels source freshness instead of pretending every provider is truly real-time.
+
+## Current v0.3.1
+
+### Architecture improvements inspired by God's Eye View
+
+GeoPulse studies useful open-source patterns from [Bilawal Sidhu's God's Eye View](https://github.com/bilawalsidhu/gods-eye-view) without turning GeoPulse into a fork or visual clone.
+
+- Data credits are visible inside the app and registered with Cesium.
+- Address search falls back to keyless Photon/OpenStreetMap when ArcGIS is not configured or unavailable.
+- Aircraft queries become viewport-bounded when the camera is zoomed in, reducing unnecessary upstream data.
+- GeoPulse continues to use its own branding, UI, data model, serverless architecture and curated trade-route implementation.
+- GeoPulse does **not** bundle God's Eye View's restricted third-party datasets, models, promotional media or branding.
+
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Current v0.3
 
@@ -87,7 +101,7 @@ Copy `.env.example` locally or add the variables in your Netlify environment set
 | Conflict-related reporting | GDELT GEO | No | Near-live news-location signal |
 | Aircraft | OpenSky | Optional/recommended | Live, rate-limited |
 | Live ships | AISStream | Yes | Live stream snapshot |
-| Detailed address search | ArcGIS World Geocoding | Yes | Search service |
+| Detailed address search | ArcGIS World Geocoding → Photon/OpenStreetMap fallback | ArcGIS key optional | Search service |
 | Major scheduled events | Ticketmaster Discovery | Yes | Scheduled/latest event listings |
 | Trade routes | GeoPulse | No | Reference only |
 
