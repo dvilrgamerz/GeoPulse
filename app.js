@@ -695,9 +695,69 @@
         scope = "viewport";
       }
       const flightUrl = "/.netlify/functions/flights" + (qs.toString() ? "?" + qs.toString() : "");
-      const response = await fetch(flightUrl, { cache: "no-store" });
-      if (!response.ok) throw new Error("OpenSky proxy HTTP " + response.status);
-      const data = await response.json();
+      let response = await fetch(flightUrl, { cache: "no-store" }).catch(() => null);
+      let data = null;
+
+      if (response && response.ok) {
+        data = await response.json();
+      } else if (anchor) {
+        // Static-host fallback: adsb.lol's public regional API can work without
+        // GeoPulse's Netlify function. This keeps real aircraft visible on
+        // GitHub/static hosting when CORS is permitted by the provider.
+        const directUrl =
+          "https://api.adsb.lol/v2/lat/" + anchor.lat.toFixed(4) +
+          "/lon/" + anchor.lon.toFixed(4) + "/dist/250";
+        const direct = await fetch(directUrl, { cache: "no-store" });
+        if (!direct.ok) throw new Error("adsb.lol HTTP " + direct.status);
+        const raw = await direct.json();
+        const nowRaw = Number(raw && raw.now);
+        const nowSeconds = Number.isFinite(nowRaw)
+          ? Math.floor(nowRaw > 1e10 ? nowRaw / 1000 : nowRaw)
+          : Math.floor(Date.now() / 1000);
+
+        const aircraft = (Array.isArray(raw && raw.ac) ? raw.ac : []).map((a) => {
+          const latitude = Number(a.lat);
+          const longitude = Number(a.lon);
+          if (!a.hex || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+          const onGround = a.alt_baro === "ground";
+          const baroFeet = onGround ? null : Number(a.alt_baro);
+          const geomFeet = Number(a.alt_geom);
+          const gsKnots = Number(a.gs);
+          const vrFpm = Number.isFinite(Number(a.baro_rate)) ? Number(a.baro_rate) : Number(a.geom_rate);
+          const seen = Number(a.seen);
+          return {
+            icao24: String(a.hex).toLowerCase(),
+            callsign: String(a.flight || "").trim() || null,
+            registration: String(a.r || "").trim() || null,
+            aircraftType: String(a.t || "").trim() || null,
+            description: String(a.desc || "").trim() || null,
+            originCountry: null,
+            longitude,
+            latitude,
+            baroAltitude: Number.isFinite(baroFeet) ? baroFeet * 0.3048 : null,
+            onGround,
+            velocity: Number.isFinite(gsKnots) ? gsKnots * 0.514444 : null,
+            track: Number.isFinite(Number(a.track)) ? Number(a.track) : null,
+            verticalRate: Number.isFinite(vrFpm) ? vrFpm * 0.00508 : null,
+            geoAltitude: Number.isFinite(geomFeet) ? geomFeet * 0.3048 : null,
+            squawk: a.squawk || null,
+            emergency: a.emergency && a.emergency !== "none" ? a.emergency : null,
+            seenSeconds: Number.isFinite(seen) ? seen : null,
+            sourceTime: nowSeconds
+          };
+        }).filter(Boolean);
+
+        data = {
+          source: "adsb.lol",
+          coverage: "250nm direct browser fallback",
+          fetchedAt: new Date().toISOString(),
+          count: aircraft.length,
+          aircraft,
+          directBrowser: true
+        };
+      } else {
+        throw new Error("Aircraft backend unavailable and no map anchor found");
+      }
 
       layers.flights.entities.removeAll();
       (data.aircraft || []).forEach((flight, index) => {
@@ -738,7 +798,7 @@
       return true;
     } catch (error) {
       if (!silent) console.warn("Aircraft source unavailable", error);
-      setStatus("flightsStatus", "Live aircraft source unavailable");
+      setStatus("flightsStatus", "No live source · deploy backend or zoom into a region");
       setHealth("openskyHealth", "bad");
       $("flightCount").textContent = "—";
       return false;
@@ -1007,6 +1067,12 @@
         const body = await response.json().catch(() => ({}));
         if (response.status === 503) {
           setStatus("shipsStatus", "KEY REQUIRED · AISStream");
+          setHealth("aisHealth", "warn");
+          $("shipCount").textContent = "—";
+          return false;
+        }
+        if (response.status === 404) {
+          setStatus("shipsStatus", "BACKEND NOT DEPLOYED · AIS requires Netlify");
           setHealth("aisHealth", "warn");
           $("shipCount").textContent = "—";
           return false;
