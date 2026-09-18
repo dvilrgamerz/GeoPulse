@@ -15,6 +15,8 @@
   let feedFilter = "all";
   let feedItems = [];
   let satelliteRecords = [];
+  let satellitePoints = null;
+  let satelliteBatchCursor = 0;
   let searchMarker;
   let shipCameraTimer;
   let flightCameraTimer;
@@ -48,14 +50,38 @@
   };
 
   const tradeRoutes = [
-    { name: "Trans-Pacific", points: [-122.33, 47.60, -157.85, 21.30, 139.69, 35.68, 121.47, 31.23] },
-    { name: "Asia-Europe via Suez", points: [121.47, 31.23, 103.82, 1.35, 80.27, 13.08, 43.15, 12.80, 32.55, 29.97, 14.27, 37.98, 4.48, 51.92] },
-    { name: "North Atlantic", points: [-74.01, 40.71, -25.67, 37.74, -9.14, 38.72, 4.48, 51.92] },
-    { name: "Panama Connector", points: [-74.01, 40.71, -79.52, 9.01, -118.24, 33.74] },
-    { name: "South America-Europe", points: [-46.33, -23.96, -28.64, 38.53, -9.14, 38.72, 4.48, 51.92] },
-    { name: "Cape Route", points: [103.82, 1.35, 80.27, 13.08, 18.42, -33.93, -9.14, 38.72] },
-    { name: "Indian Ocean", points: [55.27, 25.20, 72.88, 19.08, 80.27, 13.08, 103.82, 1.35] },
-    { name: "Australia-Asia", points: [151.21, -33.87, 115.86, -31.95, 103.82, 1.35, 121.47, 31.23] }
+    { name: "North Atlantic Eastbound", points: [-74.01,40.71,-40.0,45.0,-9.14,38.72,4.48,51.92] },
+    { name: "North Atlantic Westbound", points: [4.48,51.92,-15.0,49.0,-45.0,42.0,-74.01,40.71] },
+    { name: "US Gulf-Europe", points: [-95.27,29.31,-80.1,25.7,-40.0,36.0,-9.14,38.72,4.48,51.92] },
+    { name: "US East-Panama", points: [-74.01,40.71,-79.9,25.5,-79.52,9.01] },
+    { name: "Panama-US West", points: [-79.52,9.01,-95.0,10.0,-118.24,33.74,-122.33,47.60] },
+    { name: "Panama-East Asia", points: [-79.52,9.01,-118.24,33.74,-155.0,24.0,139.69,35.68,121.47,31.23] },
+    { name: "Trans-Pacific North", points: [-122.33,47.60,-160.0,43.0,170.0,42.0,139.69,35.68,121.47,31.23] },
+    { name: "Trans-Pacific South", points: [-118.24,33.74,-155.0,21.3,170.0,20.0,151.21,-33.87] },
+    { name: "China-US West", points: [121.47,31.23,145.0,35.0,175.0,38.0,-150.0,40.0,-122.33,47.60] },
+    { name: "Japan-US West", points: [139.69,35.68,170.0,40.0,-150.0,42.0,-122.33,47.60] },
+    { name: "Korea-US West", points: [129.08,35.18,165.0,40.0,-150.0,41.0,-122.33,47.60] },
+    { name: "China-Singapore", points: [121.47,31.23,114.17,22.32,103.82,1.35] },
+    { name: "Japan-Singapore", points: [139.69,35.68,126.0,22.0,103.82,1.35] },
+    { name: "Singapore-Suez", points: [103.82,1.35,80.27,13.08,72.88,19.08,55.27,25.20,43.15,12.80,32.55,29.97] },
+    { name: "Suez-North Europe", points: [32.55,29.97,14.27,37.98,-5.6,35.9,-9.14,38.72,4.48,51.92] },
+    { name: "Persian Gulf-Europe", points: [55.27,25.20,43.15,12.80,32.55,29.97,14.27,37.98,-9.14,38.72,4.48,51.92] },
+    { name: "Persian Gulf-Asia", points: [55.27,25.20,72.88,19.08,80.27,13.08,103.82,1.35,121.47,31.23] },
+    { name: "India-Singapore", points: [72.88,19.08,80.27,13.08,95.0,6.0,103.82,1.35] },
+    { name: "India-Europe", points: [72.88,19.08,55.27,25.20,43.15,12.80,32.55,29.97,14.27,37.98,-9.14,38.72] },
+    { name: "Cape of Good Hope Asia-Europe", points: [103.82,1.35,80.0,-5.0,55.0,-20.0,18.42,-33.93,-5.0,-20.0,-9.14,38.72] },
+    { name: "West Africa-Europe", points: [3.38,6.45,-5.0,15.0,-9.14,38.72,4.48,51.92] },
+    { name: "West Africa-US Gulf", points: [3.38,6.45,-20.0,10.0,-50.0,18.0,-80.0,25.0,-95.27,29.31] },
+    { name: "Brazil-Europe", points: [-46.33,-23.96,-28.64,38.53,-9.14,38.72,4.48,51.92] },
+    { name: "Brazil-US East", points: [-46.33,-23.96,-35.0,-5.0,-55.0,20.0,-74.01,40.71] },
+    { name: "Chile-Asia Pacific", points: [-71.63,-33.03,-120.0,-30.0,-160.0,-20.0,170.0,-15.0,151.21,-33.87] },
+    { name: "Australia-Singapore", points: [151.21,-33.87,115.86,-31.95,103.82,1.35] },
+    { name: "Australia-China", points: [151.21,-33.87,130.0,-15.0,114.17,22.32,121.47,31.23] },
+    { name: "Australia-Japan", points: [151.21,-33.87,145.0,-10.0,139.69,35.68] },
+    { name: "New Zealand-Asia", points: [174.76,-36.85,160.0,-20.0,130.0,0.0,103.82,1.35] },
+    { name: "Mediterranean West-East", points: [-5.6,35.9,2.17,41.38,9.0,39.0,14.27,37.98,24.0,35.0,32.55,29.97] },
+    { name: "Black Sea-Mediterranean", points: [29.0,41.0,26.0,40.0,24.0,37.0,14.27,37.98,-5.6,35.9] },
+    { name: "Baltic-North Sea", points: [18.07,59.33,12.57,55.68,8.0,56.0,4.48,51.92] }
   ];
 
   const flyTargets = {
@@ -189,6 +215,7 @@
     viewer.scene.backgroundColor = C.Color.fromCssColorString("#01060d");
 
     Object.values(layers).forEach((source) => viewer.dataSources.add(source));
+    satellitePoints = viewer.scene.primitives.add(new C.PointPrimitiveCollection());
     registerDataCredits();
     await setBasemap("satellite");
 
@@ -217,6 +244,7 @@
         }
       });
     });
+    setStatus("tradeStatus", tradeRoutes.length + " major global corridors");
   }
 
   function quakeColor(magnitude) {
@@ -352,6 +380,7 @@
         const lon = Number(geometry.coordinates[0]);
         const lat = Number(geometry.coordinates[1]);
         const category = (event.categories || []).map((c) => c.title).join(", ") || "Natural event";
+        if (/earthquake|seismic/i.test(category)) return;
         const when = geometry.date ? Date.parse(geometry.date) : Date.now();
         if (addDisasterPoint(
           "eonet-" + event.id, event.title, category, lat, lon, when,
@@ -368,6 +397,8 @@
       if (!response.ok) throw new Error("GDACS proxy HTTP " + response.status);
       const data = await response.json();
       (data.events || []).forEach((event, index) => {
+        const eventType = String(event.type || "");
+        if (/^(EQ|EARTHQUAKE)$/i.test(eventType) || /earthquake|seismic/i.test(String(event.name || ""))) return;
         const when = event.fromDate ? Date.parse(event.fromDate) : Date.parse(data.fetchedAt);
         const title = [event.name, event.country].filter(Boolean).join(" · ");
         if (addDisasterPoint(
@@ -393,23 +424,39 @@
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path fill="#7df5ff" stroke="#061522" stroke-width="1.2" d="M16 1l3 10 9 5v3l-9-2-2 10 4 2v2l-5-1-5 1v-2l4-2-2-10-9 2v-3l9-5z"/></svg>'
   );
 
+  function getViewAnchor() {
+    if (!viewer) return null;
+    try {
+      const canvas = viewer.scene.canvas;
+      const center = new C.Cartesian2(canvas.clientWidth / 2, canvas.clientHeight / 2);
+      const hit = viewer.camera.pickEllipsoid(center, viewer.scene.globe.ellipsoid);
+      if (!hit) return null;
+      const geo = C.Cartographic.fromCartesian(hit);
+      return { lat: C.Math.toDegrees(geo.latitude), lon: C.Math.toDegrees(geo.longitude) };
+    } catch {
+      return null;
+    }
+  }
+
   async function loadFlights(silent = false) {
     try {
       if (!silent) setStatus("flightsStatus", "Connecting…");
       const bounds = getCameraBounds();
-      let flightUrl = "/.netlify/functions/flights";
+      const anchor = getViewAnchor();
+      const qs = new URLSearchParams();
       let scope = "global";
+      if (anchor) {
+        qs.set("lat", anchor.lat.toFixed(4));
+        qs.set("lon", anchor.lon.toFixed(4));
+      }
       if (bounds && bounds.width <= 120 && bounds.height <= 80) {
-        const qs = new URLSearchParams({
-          lamin: bounds.south.toFixed(4),
-          lomin: bounds.west.toFixed(4),
-          lamax: bounds.north.toFixed(4),
-          lomax: bounds.east.toFixed(4)
-        });
-        flightUrl += "?" + qs.toString();
+        qs.set("lamin", bounds.south.toFixed(4));
+        qs.set("lomin", bounds.west.toFixed(4));
+        qs.set("lamax", bounds.north.toFixed(4));
+        qs.set("lomax", bounds.east.toFixed(4));
         scope = "viewport";
       }
-
+      const flightUrl = "/.netlify/functions/flights" + (qs.toString() ? "?" + qs.toString() : "");
       const response = await fetch(flightUrl, { cache: "no-store" });
       if (!response.ok) throw new Error("OpenSky proxy HTTP " + response.status);
       const data = await response.json();
@@ -436,7 +483,9 @@
       });
 
       $("flightCount").textContent = Number(data.count || 0).toLocaleString();
-      setStatus("flightsStatus", Number(data.count || 0).toLocaleString() + " " + scope + " · " + formatAge(Date.parse(data.fetchedAt)));
+      const sourceName = data.source || "Aircraft source";
+      const coverage = data.coverage || scope;
+      setStatus("flightsStatus", Number(data.count || 0).toLocaleString() + " · " + sourceName + " · " + coverage);
       setHealth("openskyHealth", "good");
       return true;
     } catch (error) {
@@ -465,67 +514,83 @@
     }
   }
 
+  function satelliteColor(name) {
+    const n = String(name || "").toUpperCase();
+    if (n.includes("STARLINK")) return C.Color.fromCssColorString("#43d9ff");
+    if (n.includes("ONEWEB")) return C.Color.fromCssColorString("#b57aff");
+    if (n.includes("GPS") || n.includes("NAVSTAR")) return C.Color.fromCssColorString("#65ffc7");
+    if (n.includes("ISS")) return C.Color.WHITE;
+    return C.Color.fromCssColorString("#79b8ff");
+  }
+
   function updateSatellitePositions() {
-    if (!layers.satellites.show || !satelliteRecords.length) return;
+    if (!satellitePoints || !satellitePoints.show || !satelliteRecords.length) return;
     const now = new Date();
-    satelliteRecords.forEach((record) => {
+    const batchSize = Math.min(4500, satelliteRecords.length);
+    const start = satelliteBatchCursor % satelliteRecords.length;
+
+    for (let offset = 0; offset < batchSize; offset += 1) {
+      const index = (start + offset) % satelliteRecords.length;
+      const record = satelliteRecords[index];
       const pos = satellitePosition(record, now);
-      if (!pos || !record.entity) return;
-      record.entity.position = C.Cartesian3.fromDegrees(pos.lon, pos.lat, pos.height);
-    });
+      if (!pos || !record.point) continue;
+      record.point.position = C.Cartesian3.fromDegrees(pos.lon, pos.lat, pos.height);
+    }
+    satelliteBatchCursor = (start + batchSize) % satelliteRecords.length;
   }
 
   async function loadSatellites() {
-    if (!S || typeof S.json2satrec !== "function") {
+    if (!S || typeof S.twoline2satrec !== "function") {
       setStatus("satellitesStatus", "Propagation library unavailable");
       setHealth("celestrakHealth", "bad");
       return false;
     }
 
     try {
+      setStatus("satellitesStatus", "Loading full ACTIVE catalog…");
       const response = await fetch("/.netlify/functions/satellites", { cache: "no-store" });
       if (!response.ok) throw new Error("CelesTrak proxy HTTP " + response.status);
       const data = await response.json();
 
-      layers.satellites.entities.removeAll();
+      if (!satellitePoints) throw new Error("Satellite renderer unavailable");
+      satellitePoints.removeAll();
       satelliteRecords = [];
+      satelliteBatchCursor = 0;
 
-      (data.satellites || []).forEach((raw, index) => {
+      const now = new Date();
+      (data.satellites || []).forEach((raw) => {
         try {
-          const satrec = S.json2satrec(raw);
-          const record = { raw, satrec, entity: null };
-          const pos = satellitePosition(record, new Date());
+          const satrec = S.twoline2satrec(raw.l1, raw.l2);
+          const record = { raw, satrec, point: null };
+          const pos = satellitePosition(record, now);
           if (!pos) return;
-          const name = String(raw.OBJECT_NAME || "Satellite");
-          const isStation = String(raw._group || "").toUpperCase() === "STATIONS" || /ISS/i.test(name);
-          const entity = layers.satellites.entities.add({
-            id: "sat-" + (raw.NORAD_CAT_ID || index),
-            name,
+          const name = String(raw.n || raw.id || "Satellite");
+          const isIss = /ISS \(ZARYA\)|ISS/i.test(name);
+          const point = satellitePoints.add({
             position: C.Cartesian3.fromDegrees(pos.lon, pos.lat, pos.height),
-            point: {
-              pixelSize: isStation ? 7 : 3.5,
-              color: isStation
-                ? C.Color.fromCssColorString("#ffffff")
-                : C.Color.fromCssColorString("#73cfff"),
-              outlineColor: C.Color.fromCssColorString("#1fe6ff").withAlpha(0.7),
-              outlineWidth: isStation ? 2 : 1,
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
-              distanceDisplayCondition: new C.DistanceDisplayCondition(0, 30000000)
-            }
+            pixelSize: isIss ? 7 : 2.5,
+            color: satelliteColor(name).withAlpha(isIss ? 1 : 0.72),
+            outlineColor: isIss ? C.Color.fromCssColorString("#22f0ff") : C.Color.TRANSPARENT,
+            outlineWidth: isIss ? 2 : 0,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            id: { type: "satellite", norad: raw.id, name }
           });
-          record.entity = entity;
+          record.point = point;
           satelliteRecords.push(record);
         } catch {}
       });
 
-      updateSatellitePositions();
+      satellitePoints.show = document.querySelector('.layer-toggle[data-layer="satellites"]')?.checked !== false;
       $("satelliteCount").textContent = satelliteRecords.length.toLocaleString();
-      setStatus("satellitesStatus", satelliteRecords.length.toLocaleString() + " propagated · orbital data " + formatAge(Date.parse(data.fetchedAt)));
-      setHealth("celestrakHealth", "good");
+      setStatus(
+        "satellitesStatus",
+        satelliteRecords.length.toLocaleString() + " ACTIVE · CelesTrak · TLE " + formatAge(Date.parse(data.fetchedAt))
+      );
+      setHealth("celestrakHealth", satelliteRecords.length > 1000 ? "good" : "warn");
       return true;
     } catch (error) {
       console.warn("Satellite source unavailable", error);
-      setStatus("satellitesStatus", "CelesTrak unavailable");
+      setStatus("satellitesStatus", "CelesTrak ACTIVE unavailable");
       setHealth("celestrakHealth", "bad");
       $("satelliteCount").textContent = "—";
       return false;
@@ -691,9 +756,9 @@
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         if (response.status === 503) {
-          setStatus("shipsStatus", "Add AISSTREAM_API_KEY");
+          setStatus("shipsStatus", "KEY REQUIRED · AISStream");
           setHealth("aisHealth", "warn");
-          $("shipCount").textContent = "KEY";
+          $("shipCount").textContent = "—";
           return false;
         }
         throw new Error(body.error || "AIS proxy HTTP " + response.status);
@@ -799,6 +864,7 @@
       input.addEventListener("change", () => {
         const source = layers[input.dataset.layer];
         if (source) source.show = input.checked;
+        if (input.dataset.layer === "satellites" && satellitePoints) satellitePoints.show = input.checked;
         if (input.dataset.layer === "ships" && input.checked) loadShips(false);
         if (input.dataset.layer === "majorEvents" && input.checked && !layers.majorEvents.entities.values.length) loadMajorEvents();
       });
@@ -811,6 +877,7 @@
         input.checked = shouldEnable;
         const source = layers[input.dataset.layer];
         if (source) source.show = shouldEnable;
+        if (input.dataset.layer === "satellites" && satellitePoints) satellitePoints.show = shouldEnable;
       });
       $("toggleAll").textContent = shouldEnable ? "ALL ON" : "ALL OFF";
       if (shouldEnable) loadShips(true);
@@ -1012,7 +1079,7 @@
     }
 
     try {
-      setProgress(4, "Booting GeoPulse v0.3…");
+      setProgress(4, "Booting GeoPulse v0.4…");
       await createViewer();
       addTradeRoutes();
       bindControls();
@@ -1038,7 +1105,7 @@
       $("lastRefresh").textContent = "Core sync " + new Date().toLocaleTimeString();
 
       setTimeout(() => {
-        setProgress(100, "GeoPulse v0.3 online");
+        setProgress(100, "GeoPulse v0.4 online");
         app.classList.add("ready");
         app.setAttribute("aria-hidden", "false");
         setTimeout(() => loadingScreen.classList.add("done"), 420);
