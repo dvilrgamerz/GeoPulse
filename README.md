@@ -1,91 +1,136 @@
-# 🌎 GeoPulse
+# 🌎 GeoPulse v0.3
 
 **Live Earth Intelligence**
 
-GeoPulse is an open-source real-time / near-real-time global dashboard built around an interactive 3D Earth. It combines trustworthy public data feeds with switchable map layers, freshness indicators, a newest-events stream, and cinematic globe navigation.
+GeoPulse is an open-source 3D Earth command center for live, near-live, scheduled, and reference global data. Every layer is independently switchable and the UI labels source freshness instead of pretending every provider is truly real-time.
 
-## v0.1 foundation
+## Current v0.3
 
-- 🌎 3D Earth powered by CesiumJS
-- ✈️ Live aircraft layer through OpenSky (Netlify proxy)
-- 🌋 Live earthquake feed from USGS
-- 🔥 Open natural-event feed from NASA EONET
-- 🚢 Global trade corridor layer
-- 📰 Global newest-event stream
-- 🎛️ Per-layer ON/OFF controls
-- 🕒 Source freshness + UTC clock
-- 🚀 Click an event to fly the globe to it
-- ✨ GeoPulse animated loading screen and custom SVG mark
-- 📱 Responsive command-center UI
+- 🌎 Interactive CesiumJS Earth with **Satellite / Streets / Topographic** map layouts
+- 🔎 Search by **address, house number, city, place, or latitude/longitude**
+- ✈️ Live aircraft via OpenSky
+- 🛰️ Moving satellite positions propagated from CelesTrak orbital data
+- 🚢 Live AIS vessel snapshots for the area currently in view (provider key required)
+- ⇄ Global trade corridors, clearly labeled as reference routes
+- ⚠️ Multi-hazard disaster layer combining NASA EONET + GDACS
+- ◎ USGS earthquakes
+- ◇ Near-live conflict-related **news-location signals** from GDELT, with explicit sourcing/disclaimer
+- ★ Major scheduled sports, music, and other events via Ticketmaster (provider key required)
+- 🕒 Top-right UTC clock **with seconds + full date**
+- 🕒 Visitor-local clock/date/time zone, synchronized from the browser
+- 📰 Global newest feed with filters and click-to-fly navigation
+- 🟢 Per-provider source-health indicators
+- 📱 Responsive desktop/mobile command-center UI
+- ✨ GeoPulse logo + animated loading screen
 
-> **Data honesty:** GeoPulse distinguishes real-time, near-real-time, and reference/illustrative layers. The trade-corridor layer in v0.1 is a reference visualization of major corridors, not live vessel telemetry.
+> **Important:** GeoPulse distinguishes **live**, **near-live**, **scheduled**, and **reference** data. Conflict points are geolocated reporting signals, not independently verified battlefield events. Trade corridors are not live ships.
 
-## Data sources
+## Version history
 
-| Layer | Source | Freshness |
-| --- | --- | --- |
-| Earthquakes | USGS Earthquake Hazards Program | Real-time feed |
-| Natural events | NASA EONET v3 | Near-real-time / source dependent |
-| Aircraft | OpenSky Network REST API | Live, subject to API rate limits |
-| Trade corridors | GeoPulse curated reference routes | Reference layer |
-| Satellites | Planned: CelesTrak GP data | Planned |
+### v0.1 — Foundation
+- GeoPulse identity and loading screen
+- Cesium 3D Earth
+- OpenSky aircraft
+- USGS earthquakes
+- NASA EONET natural events
+- Reference trade routes
+- Global newest feed
+- Responsive layer controls
+
+### v0.2 — Earth Intelligence
+- CelesTrak satellite data service
+- Satellite.js SGP4 propagation
+- Multi-hazard GDACS service
+- Detailed geocoding service
+- Expanded serverless data architecture
+- Multiple map styles
+
+### v0.3 — Global Command Center
+- Live AIS ship provider integration
+- GDELT conflict-related reporting layer
+- Major-event discovery provider
+- Detailed address + coordinate search UI
+- UTC + local date/time synchronization
+- Expanded source health, counters, filters, and mobile UI
+
+See [CHANGELOG.md](CHANGELOG.md) for the detailed release notes.
+
+## Provider setup
+
+GeoPulse runs without every optional key, but these environment variables unlock the full experience:
+
+```text
+# Recommended for aircraft reliability / higher OpenSky allowance
+OPENSKY_CLIENT_ID=
+OPENSKY_CLIENT_SECRET=
+
+# Detailed address and house-number geocoding
+ARCGIS_API_KEY=
+
+# Live AIS vessel positions
+AISSTREAM_API_KEY=
+
+# Major scheduled sports/music/entertainment events
+TICKETMASTER_API_KEY=
+```
+
+Copy `.env.example` locally or add the variables in your Netlify environment settings. **Never commit real secrets.**
+
+### What works without optional keys?
+
+| Layer | Provider | Key required? | GeoPulse label |
+| --- | --- | ---: | --- |
+| Earthquakes | USGS | No | Real-time feed |
+| Natural disasters | NASA EONET | No | Near-live/source dependent |
+| Disaster alerts | GDACS | No | Frequently refreshed |
+| Satellites | CelesTrak | No | Orbital data + locally propagated position |
+| Conflict-related reporting | GDELT GEO | No | Near-live news-location signal |
+| Aircraft | OpenSky | Optional/recommended | Live, rate-limited |
+| Live ships | AISStream | Yes | Live stream snapshot |
+| Detailed address search | ArcGIS World Geocoding | Yes | Search service |
+| Major scheduled events | Ticketmaster Discovery | Yes | Scheduled/latest event listings |
+| Trade routes | GeoPulse | No | Reference only |
 
 ## Run locally
 
-Because the core frontend is build-free, you can serve the repository with any static server:
+The frontend itself is build-free:
 
 ```bash
 python -m http.server 8080
 ```
 
-Then open `http://localhost:8080`.
+For the serverless providers, use Netlify Dev so `/.netlify/functions/*` is available.
 
-The aircraft layer uses a Netlify Function. When running only a static local server, the rest of the dashboard works and the aircraft control will report that its proxy is unavailable.
+## Deploy
 
-## Deploy on Netlify
-
-The repository includes `netlify.toml` and `netlify/functions/flights.js`.
-
-For better OpenSky limits, set these environment variables in Netlify:
+The repository is configured for Netlify and pins Node.js 22 for the serverless functions.
 
 ```text
-OPENSKY_CLIENT_ID=...
-OPENSKY_CLIENT_SECRET=...
+publish = "."
+functions = "netlify/functions"
 ```
 
-The function can attempt anonymous access when credentials are not configured, but OpenSky may rate-limit or change anonymous access.
+## Data-source notes
 
-## Roadmap
+See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for freshness, limitations, and provider notes.
 
-### v0.2
-- Satellite propagation using CelesTrak orbital data
-- Wildfire layer using NASA FIRMS
-- Severe-weather and storm layers
-- Search + fly-to-place
-- Better flight clustering and camera-bounded flight requests
+## Safety / accuracy principles
 
-### v0.3
-- Sourced global conflict / humanitarian reports with clear attribution
-- Rocket launches and space-weather layers
-- Optional AIS maritime provider integration
-- Historical playback
-- User alerts and followed locations
-
-## Principles
-
-1. **Never fake “live.”** Every layer exposes a source and last-updated state.
-2. **Source sensitive global events.** Conflict and political-event layers must retain attribution and timestamps.
-3. **Protect credentials.** Secret API credentials belong in serverless environment variables, not browser JavaScript.
-4. **Degrade gracefully.** If a provider is down or rate-limited, the rest of GeoPulse stays usable.
-5. **Keep the globe fast.** Limit entities, cluster where needed, and refresh only at sensible intervals.
+1. **Never fake live data.**
+2. **Show source + freshness.**
+3. **Treat conflict reporting as sourced reporting, not GeoPulse verification.**
+4. **Keep secret keys server-side.**
+5. **Degrade gracefully if a provider is unavailable or rate-limited.**
+6. **Do not use GeoPulse as an aviation, maritime, disaster-response, or personal-safety system.**
 
 ## Technology
 
 - CesiumJS 1.145
+- satellite.js 6.0.2
 - Vanilla JavaScript / HTML / CSS
-- Netlify Functions
-- Public JSON / GeoJSON APIs
+- Netlify Functions on Node.js 22
+- Public JSON / GeoJSON / WebSocket data providers
 
 ## License
 
-MIT. Data from external providers remains subject to each provider's own terms and licenses.
+MIT for GeoPulse source code. External data remains subject to each provider's own terms and licenses.
