@@ -46,7 +46,7 @@ jobs:
           grep -q 'id="mapStyle"' index.html
           grep -q 'v0.5' index.html
           grep -q 'GROUP=ACTIVE' netlify/functions/satellites.js
-          grep -q 'api.adsb.lol' netlify/functions/flights.js
+          grep -q 'api.adsb.lol' netlify/functions/flights.mjs
           grep -q 'earthquake|seismic' app.js
           grep -q 'id="objectInspector"' index.html
           grep -q 'inspectAircraft' app.js
