@@ -57,12 +57,13 @@ GeoPulse treats freshness as a property of each layer. A moving marker is not au
 - UI classification: **scheduled/latest event listings**, not a live scoreboard.
 - Source: https://developer.ticketmaster.com/products-and-docs/apis/discovery-api/v2/
 
-## ArcGIS World Geocoding — Address search
-- GeoPulse can search a single-line address/place query and return scored candidates.
-- Supports provider match types such as PointAddress, StreetAddress and Subaddress when coverage exists.
-- Required environment variable: `ARCGIS_API_KEY`.
-- GeoPulse does **not** guarantee rooftop-level precision for every home; accuracy depends on the provider's data and match score.
-- Source: https://developers.arcgis.com/rest/geocode/find-address-candidates/
+## ArcGIS World Geocoding + Photon — Address search
+- GeoPulse first uses ArcGIS World Geocoding when `ARCGIS_API_KEY` is configured.
+- ArcGIS can return provider match types such as PointAddress, StreetAddress and Subaddress when coverage exists.
+- If ArcGIS is unavailable, unconfigured, or has no result, GeoPulse falls back to Photon over OpenStreetMap.
+- Photon is a public best-effort demo service; GeoPulse limits each interactive request to a small result set and does not bulk query it.
+- GeoPulse does **not** guarantee rooftop-level precision for every home; precision depends on provider coverage and match quality.
+- Sources: https://developers.arcgis.com/rest/geocode/find-address-candidates/ and https://photon.komoot.io/
 
 ## GeoPulse Trade Corridors
 - Curated geodesic reference lines between major trade gateways.
