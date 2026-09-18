@@ -1,8 +1,22 @@
-# 🌎 GeoPulse v0.4
+# 🌎 GeoPulse v0.5
 
 **Live Earth Intelligence**
 
 GeoPulse is an open-source 3D Earth command center for live, near-live, scheduled, and reference global data. Every layer is independently switchable and the UI labels source freshness instead of pretending every provider is truly real-time.
+
+## Current v0.5
+
+### v0.5 live object inspector
+
+Click a rendered **aircraft**, **ship**, or **satellite** directly on the globe to open the GeoPulse Object Inspector.
+
+- **Aircraft:** callsign, ICAO address, registration/type when the feed provides them, altitude, speed, track, vertical rate, position, squawk, country, emergency state, feed age, provider and coverage.
+- **Ships:** vessel name, MMSI, IMO/call sign/static data when received, speed over ground, course, heading, navigation status, position, destination/draught when available, and source freshness.
+- **Satellites:** NORAD catalog number, international designator, type, owner code, operational status, launch date/site, orbital period, inclination, apogee/perigee, eccentricity and modeled current position.
+
+Aircraft now prefer **adsb.lol for focused regional views** and use **OpenSky** for broader/global coverage when available. AIS ship data remains genuinely live/provider-backed and therefore still requires `AISSTREAM_API_KEY`.
+
+> Satellite dots represent objects for which GeoPulse can load public CelesTrak GP/TLE data. This is not identical to every object listed in SATCAT, because some restricted/newer catalog entries do not have compatible public TLE/GP data.
 
 ## Current v0.4
 
@@ -35,7 +49,7 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 - 🌎 Interactive CesiumJS Earth with **Satellite / Streets / Topographic** map layouts
 - 🔎 Search by **address, house number, city, place, or latitude/longitude**
-- ✈️ Live aircraft via OpenSky with bounded adsb.lol fallback
+- ✈️ Live aircraft via adsb.lol focused-view data with OpenSky broader/global fallback
 - 🛰️ Full CelesTrak ACTIVE TLE catalog with moving SGP4-propagated positions
 - 🚢 Live AIS vessel snapshots for the area currently in view (provider key required)
 - ⇄ Global trade corridors, clearly labeled as reference routes
