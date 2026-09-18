@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#020812" />
+  <meta name="description" content="GeoPulse — live Earth intelligence with switchable global data layers." />
+  <title>GeoPulse — Live Earth Intelligence</title>
+  <link rel="icon" href="assets/geopulse-mark.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://cesium.com" />
+  <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.145/Build/Cesium/Widgets/widgets.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.145/Build/Cesium/Cesium.js"></script>
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen" aria-live="polite">
+    <div class="loading-stars"></div>
+    <div class="loading-core">
+      <img class="loading-logo" src="assets/geopulse-mark.svg" alt="GeoPulse" />
+      <h1><span>Geo</span><strong>Pulse</strong></h1>
+      <p class="loading-tagline">LIVE EARTH INTELLIGENCE</p>
+      <div class="loading-progress-track">
+        <div id="loadingProgress" class="loading-progress"></div>
+      </div>
+      <div class="loading-meta">
+        <span id="loadingPercent">0%</span>
+        <span id="loadingMessage">Initializing global systems…</span>
+      </div>
+    </div>
+  </div>
+
+  <main id="app" class="app" aria-hidden="true">
+    <header class="topbar">
+      <div class="brand">
+        <img src="assets/geopulse-mark.svg" alt="" />
+        <div>
+          <div class="brand-name"><span>Geo</span><strong>Pulse</strong></div>
+          <div class="brand-sub">LIVE EARTH INTELLIGENCE</div>
+        </div>
+      </div>
+
+      <div class="top-status">
+        <div class="status-pill live"><i></i><span id="networkStatus">SYSTEM ONLINE</span></div>
+        <div class="status-pill"><span id="utcClock">--:--:-- UTC</span></div>
+      </div>
+    </header>
+
+    <section class="workspace">
+      <aside class="panel layers-panel">
+        <div class="panel-header">
+          <div>
+            <span class="eyebrow">CONTROL</span>
+            <h2>Live Layers</h2>
+          </div>
+          <button id="toggleAll" class="ghost-btn" type="button">ALL ON</button>
+        </div>
+
+        <div class="layer-list">
+          <label class="layer-row" data-layer-row="flights">
+            <span class="layer-icon">✈</span>
+            <span class="layer-copy"><b>Aircraft</b><small id="flightsStatus">Connecting…</small></span>
+            <input class="layer-toggle" data-layer="flights" type="checkbox" checked />
+            <span class="switch"></span>
+          </label>
+
+          <label class="layer-row" data-layer-row="trade">
+            <span class="layer-icon">⇄</span>
+            <span class="layer-copy"><b>Trade Routes</b><small>Global corridors</small></span>
+            <input class="layer-toggle" data-layer="trade" type="checkbox" checked />
+            <span class="switch"></span>
+          </label>
+
+          <label class="layer-row" data-layer-row="earthquakes">
+            <span class="layer-icon">◉</span>
+            <span class="layer-copy"><b>Earthquakes</b><small id="earthquakesStatus">Loading…</small></span>
+            <input class="layer-toggle" data-layer="earthquakes" type="checkbox" checked />
+            <span class="switch"></span>
+          </label>
+
+          <label class="layer-row" data-layer-row="events">
+            <span class="layer-icon">△</span>
+            <span class="layer-copy"><b>Natural Events</b><small id="eventsStatus">Loading…</small></span>
+            <input class="layer-toggle" data-layer="events" type="checkbox" checked />
+            <span class="switch"></span>
+          </label>
+
+          <label class="layer-row disabled" title="Satellite propagation is planned for GeoPulse v0.2">
+            <span class="layer-icon">◌</span>
+            <span class="layer-copy"><b>Satellites</b><small>v0.2 · CelesTrak</small></span>
+            <input type="checkbox" disabled />
+            <span class="switch"></span>
+          </label>
+
+          <label class="layer-row disabled" title="Conflict reports will only be enabled with a source-attributed provider">
+            <span class="layer-icon">◇</span>
+            <span class="layer-copy"><b>Conflict Reports</b><small>Source integration next</small></span>
+            <input type="checkbox" disabled />
+            <span class="switch"></span>
+          </label>
+
+          <label class="layer-row disabled" title="Live maritime telemetry needs an AIS data provider">
+            <span class="layer-icon">▱</span>
+            <span class="layer-copy"><b>Live Ships</b><small>AIS provider required</small></span>
+            <input type="checkbox" disabled />
+            <span class="switch"></span>
+          </label>
+        </div>
+
+        <div class="source-health">
+          <span class="eyebrow">SOURCE HEALTH</span>
+          <div class="health-row"><span>USGS</span><i id="usgsHealth"></i></div>
+          <div class="health-row"><span>NASA EONET</span><i id="eonetHealth"></i></div>
+          <div class="health-row"><span>OpenSky</span><i id="openskyHealth"></i></div>
+        </div>
+      </aside>
+
+      <section class="globe-stage">
+        <div id="cesiumContainer"></div>
+
+        <div class="globe-overlay top-left">
+          <span class="eyebrow">GLOBAL VIEW</span>
+          <div class="coordinate-readout" id="cameraReadout">LAT -- · LON -- · ALT --</div>
+        </div>
+
+        <div class="globe-tools">
+          <button type="button" data-fly="world" title="Global view">◎</button>
+          <button type="button" data-fly="americas" title="Americas">A</button>
+          <button type="button" data-fly="europe" title="Europe">E</button>
+          <button type="button" data-fly="asia" title="Asia">AS</button>
+        </div>
+
+        <div class="stats-strip">
+          <div><small>AIRCRAFT</small><strong id="flightCount">—</strong></div>
+          <div><small>EARTHQUAKES · 24H</small><strong id="quakeCount">—</strong></div>
+          <div><small>OPEN EVENTS</small><strong id="eventCount">—</strong></div>
+          <div><small>TRADE CORRIDORS</small><strong id="routeCount">—</strong></div>
+        </div>
+      </section>
+
+      <aside class="panel feed-panel">
+        <div class="panel-header">
+          <div>
+            <span class="eyebrow">GLOBAL NEWEST</span>
+            <h2>Live Feed</h2>
+          </div>
+          <span class="pulse-dot"></span>
+        </div>
+
+        <div class="feed-filters" role="group" aria-label="Event filters">
+          <button class="filter-btn active" data-filter="all" type="button">ALL</button>
+          <button class="filter-btn" data-filter="earthquake" type="button">QUAKES</button>
+          <button class="filter-btn" data-filter="event" type="button">EVENTS</button>
+        </div>
+
+        <div id="feed" class="feed">
+          <div class="feed-empty">Waiting for live sources…</div>
+        </div>
+      </aside>
+    </section>
+
+    <footer class="footerbar">
+      <span><i class="dot live-dot"></i> LIVE / NEAR-LIVE SOURCES</span>
+      <span id="lastRefresh">Initializing…</span>
+      <span class="footer-warning">REFERENCE ROUTES ARE NOT LIVE VESSEL TELEMETRY</span>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
