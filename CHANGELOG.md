@@ -2,6 +2,25 @@
 
 All notable GeoPulse milestones are documented here.
 
+## v0.4 — Data Scale & Reliability — 2026-09-18
+
+### Fixed
+- Replaced the small 159-ish satellite sample with CelesTrak's full ACTIVE TLE catalog.
+- Added an adsb.lol bounded live-flight fallback when OpenSky is unavailable or returns no usable snapshot.
+- Removed earthquakes from the combined Disaster layer so seismic events do not appear twice.
+- Stopped presenting an unconfigured AIS ship provider as a real zero count.
+
+### Added
+- High-performance Cesium PointPrimitiveCollection satellite renderer for thousands of active objects.
+- Batched SGP4 satellite position updates to reduce UI stalls.
+- 32 major global trade-corridor reference routes.
+- Aircraft source and coverage labeling in the layer status.
+
+### Clarified
+- Full ACTIVE satellites are not the same thing as every cataloged payload/object/debris item.
+- AISStream still requires a server-side API key.
+- Trade corridors are a reference network, not live vessel tracks.
+
 ## v0.3.1 — Open-source architecture polish — 2026-09-18
 
 ### Added
