@@ -701,10 +701,9 @@
 
       if (response && response.ok) {
         data = await response.json();
-      } else if (anchor) {
-        // Static-host fallback: adsb.lol's public regional API can work without
-        // GeoPulse's Netlify function. This keeps real aircraft visible on
-        // GitHub/static hosting when CORS is permitted by the provider.
+      } else if (anchor && focusedView) {
+        // Static-host fallback is only used for a focused map view.
+        // At world view, do not turn an arbitrary globe-center query into a misleading zero.
         const directUrl =
           "https://api.adsb.lol/v2/lat/" + anchor.lat.toFixed(4) +
           "/lon/" + anchor.lon.toFixed(4) + "/dist/250";
@@ -775,8 +774,9 @@
             image: planeSvg, width: 18, height: 18,
             rotation: C.Math.toRadians(-Number(flight.track || 0)),
             alignedAxis: C.Cartesian3.ZERO,
-            disableDepthTestDistance: 9000000,
-            distanceDisplayCondition: new C.DistanceDisplayCondition(0, 15000000)
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            distanceDisplayCondition: new C.DistanceDisplayCondition(0, 40000000),
+            scaleByDistance: new C.NearFarScalar(200000, 1.0, 40000000, 0.48)
           }
         });
         entity._geopulseInfo = {
