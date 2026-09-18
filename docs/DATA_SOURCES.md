@@ -32,7 +32,9 @@ GeoPulse treats freshness as a property of each layer. A moving marker is not au
 - adsb.lol data is ODbL 1.0.
 - Not suitable for aviation safety.
 
-## CelesTrak + satellite.js — Active satellites
+## CelesTrak SATCAT + GP + satellite.js — Trackable satellites
+- Clicking a satellite makes a separate CelesTrak SATCAT query by NORAD catalog number for richer metadata such as object type, owner, launch date/site, period, inclination, apogee and perigee.
+
 - GeoPulse v0.4 fetches CelesTrak's full `GROUP=ACTIVE` catalog in compact TLE form rather than a small hand-picked set of groups.
 - The browser uses satellite.js/SGP4 to propagate display positions from those orbital elements.
 - Thousands of objects are rendered through a Cesium PointPrimitiveCollection, and propagation work is updated in batches.
@@ -42,6 +44,10 @@ GeoPulse treats freshness as a property of each layer. A moving marker is not au
 - Source: https://celestrak.org/NORAD/documentation/gp-data-formats.php
 
 ## AISStream — Live ships
+- GeoPulse v0.5 exposes click details from live AIS position messages: MMSI, vessel name, coordinates, speed over ground, course, heading, navigation status, position accuracy and UTC-second timestamp.
+- The viewport snapshot also listens for ShipStaticData/StaticDataReport messages; if they happen to arrive during the live sampling window, GeoPulse can show additional vessel/voyage fields.
+- AIS is event-driven, so static/voyage fields may be unavailable for a selected ship even when its live position is present.
+
 - GeoPulse uses a server-side WebSocket connection because AISStream does not allow direct browser connections.
 - The request is bounded to the current map view and collects a short snapshot of position reports.
 - Required environment variable: `AISSTREAM_API_KEY`.
