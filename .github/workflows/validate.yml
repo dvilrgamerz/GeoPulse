@@ -23,11 +23,24 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check app.js
-          node --check netlify/functions/flights.js
+          for file in netlify/functions/*.js; do
+            echo "Checking $file"
+            node --check "$file"
+          done
 
-      - name: Check required files
+      - name: Check required project files
         run: |
           test -f index.html
           test -f styles.css
           test -f assets/geopulse-mark.svg
           test -f docs/DATA_SOURCES.md
+          test -f CHANGELOG.md
+          test -f .env.example
+
+      - name: Verify GeoPulse v0.3 UI hooks
+        run: |
+          grep -q 'data-layer="satellites"' index.html
+          grep -q 'data-layer="ships"' index.html
+          grep -q 'data-layer="conflicts"' index.html
+          grep -q 'id="localClock"' index.html
+          grep -q 'id="mapStyle"' index.html
