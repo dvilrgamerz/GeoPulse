@@ -2,6 +2,19 @@
 
 All notable GeoPulse milestones are documented here.
 
+## v0.3.1 — Open-source architecture polish — 2026-09-18
+
+### Added
+- In-app data-source and license panel.
+- Cesium data-credit registration for active GeoPulse providers.
+- Photon/OpenStreetMap keyless geocoder fallback.
+- God's Eye View acknowledgement and third-party notice.
+
+### Improved
+- Aircraft requests become viewport-bounded when zoomed in, reducing unnecessary OpenSky payload.
+- Search results identify their provider.
+- GeoPulse explicitly separates architecture inspiration from upstream restricted datasets/assets.
+
 ## v0.3 — Global Command Center — 2026-09-18
 
 ### Added
