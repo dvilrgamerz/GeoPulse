@@ -17,6 +17,7 @@
   let satelliteRecords = [];
   let searchMarker;
   let shipCameraTimer;
+  let flightCameraTimer;
   const intervals = [];
 
   const layers = {
@@ -70,6 +71,24 @@
     conflict: "CONFLICT REPORTING",
     majorEvent: "MAJOR EVENT"
   };
+
+  const DATA_CREDITS = [
+    'Flights: <a href="https://opensky-network.org" target="_blank" rel="noopener">OpenSky Network</a>',
+    'Satellites: <a href="https://celestrak.org" target="_blank" rel="noopener">CelesTrak</a> + SGP4 propagation',
+    'Earthquakes: data courtesy of the <a href="https://earthquake.usgs.gov" target="_blank" rel="noopener">U.S. Geological Survey</a>',
+    'Natural events: <a href="https://eonet.gsfc.nasa.gov" target="_blank" rel="noopener">NASA EONET</a>',
+    'Disaster alerts: <a href="https://www.gdacs.org" target="_blank" rel="noopener">GDACS</a>',
+    'Conflict-related reporting: <a href="https://www.gdeltproject.org" target="_blank" rel="noopener">GDELT Project</a>',
+    'Live vessels: <a href="https://aisstream.io" target="_blank" rel="noopener">AISStream</a>',
+    'Major scheduled events: <a href="https://developer.ticketmaster.com" target="_blank" rel="noopener">Ticketmaster Discovery</a>',
+    'Keyless place search fallback: <a href="https://photon.komoot.io" target="_blank" rel="noopener">Photon</a> over <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>'
+  ];
+
+  function registerDataCredits() {
+    const display = viewer && viewer.creditDisplay;
+    if (!display || typeof display.addStaticCredit !== "function") return;
+    DATA_CREDITS.forEach((html) => display.addStaticCredit(new C.Credit(html, false)));
+  }
 
   function setProgress(value, message) {
     const v = Math.max(0, Math.min(100, Math.round(value)));
@@ -170,6 +189,7 @@
     viewer.scene.backgroundColor = C.Color.fromCssColorString("#01060d");
 
     Object.values(layers).forEach((source) => viewer.dataSources.add(source));
+    registerDataCredits();
     await setBasemap("satellite");
 
     viewer.camera.setView({ destination: C.Cartesian3.fromDegrees(-20, 22, 21000000) });
@@ -376,7 +396,21 @@
   async function loadFlights(silent = false) {
     try {
       if (!silent) setStatus("flightsStatus", "Connecting…");
-      const response = await fetch("/.netlify/functions/flights", { cache: "no-store" });
+      const bounds = getCameraBounds();
+      let flightUrl = "/.netlify/functions/flights";
+      let scope = "global";
+      if (bounds && bounds.width <= 120 && bounds.height <= 80) {
+        const qs = new URLSearchParams({
+          lamin: bounds.south.toFixed(4),
+          lomin: bounds.west.toFixed(4),
+          lamax: bounds.north.toFixed(4),
+          lomax: bounds.east.toFixed(4)
+        });
+        flightUrl += "?" + qs.toString();
+        scope = "viewport";
+      }
+
+      const response = await fetch(flightUrl, { cache: "no-store" });
       if (!response.ok) throw new Error("OpenSky proxy HTTP " + response.status);
       const data = await response.json();
 
@@ -402,7 +436,7 @@
       });
 
       $("flightCount").textContent = Number(data.count || 0).toLocaleString();
-      setStatus("flightsStatus", Number(data.count || 0).toLocaleString() + " received · " + formatAge(Date.parse(data.fetchedAt)));
+      setStatus("flightsStatus", Number(data.count || 0).toLocaleString() + " " + scope + " · " + formatAge(Date.parse(data.fetchedAt)));
       setHealth("openskyHealth", "good");
       return true;
     } catch (error) {
@@ -748,7 +782,16 @@
 
   function scheduleShipRefreshFromCamera() {
     clearTimeout(shipCameraTimer);
+    clearTimeout(flightCameraTimer);
     shipCameraTimer = setTimeout(() => loadShips(true), 900);
+  }
+
+  function scheduleFlightRefreshFromCamera() {
+    clearTimeout(flightCameraTimer);
+    flightCameraTimer = setTimeout(() => {
+      const toggle = document.querySelector('.layer-toggle[data-layer="flights"]');
+      if (toggle && toggle.checked && navigator.onLine) loadFlights(true);
+    }, 700);
   }
 
   function bindControls() {
@@ -794,6 +837,17 @@
 
     $("mapStyle").addEventListener("change", (event) => setBasemap(event.target.value));
     $("searchButton").addEventListener("click", runSearch);
+
+    const creditsModal = $("creditsModal");
+    $("creditsButton").addEventListener("click", () => {
+      creditsModal.hidden = false;
+    });
+    $("creditsClose").addEventListener("click", () => {
+      creditsModal.hidden = true;
+    });
+    creditsModal.addEventListener("click", (event) => {
+      if (event.target === creditsModal) creditsModal.hidden = true;
+    });
     $("locationSearch").addEventListener("keydown", (event) => {
       if (event.key === "Enter") runSearch();
       if (event.key === "Escape") $("searchResults").hidden = true;
@@ -806,6 +860,7 @@
     viewer.camera.moveEnd.addEventListener(() => {
       updateCameraReadout();
       scheduleShipRefreshFromCamera();
+      scheduleFlightRefreshFromCamera();
     });
     window.addEventListener("online", updateNetworkState);
     window.addEventListener("offline", updateNetworkState);
@@ -869,7 +924,7 @@
       panel.innerHTML = results.map((result, index) =>
         '<button class="search-result" type="button" data-search-index="' + index + '">' +
           '<b>' + escapeHtml(result.label) + '</b>' +
-          '<small>' + escapeHtml((result.type || "Place") + " · match " + Math.round(result.score || 0) + "%") + '</small>' +
+          '<small>' + escapeHtml((result.type || "Place") + " · " + (result.provider || data.source || "Search provider") + " · match " + Math.round(result.score || 0) + "%") + '</small>' +
         '</button>'
       ).join("");
       panel.hidden = false;
