@@ -99,7 +99,7 @@
   };
 
   const DATA_CREDITS = [
-    'Flights: <a href="https://opensky-network.org" target="_blank" rel="noopener">OpenSky Network</a>',
+    'Flights: <a href="https://opensky-network.org" target="_blank" rel="noopener">OpenSky Network</a> + <a href="https://adsb.lol" target="_blank" rel="noopener">adsb.lol</a> (ODbL fallback)',
     'Satellites: <a href="https://celestrak.org" target="_blank" rel="noopener">CelesTrak</a> + SGP4 propagation',
     'Earthquakes: data courtesy of the <a href="https://earthquake.usgs.gov" target="_blank" rel="noopener">U.S. Geological Survey</a>',
     'Natural events: <a href="https://eonet.gsfc.nasa.gov" target="_blank" rel="noopener">NASA EONET</a>',
