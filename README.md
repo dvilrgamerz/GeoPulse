@@ -1,8 +1,21 @@
-# 🌎 GeoPulse v0.3.1
+# 🌎 GeoPulse v0.4
 
 **Live Earth Intelligence**
 
 GeoPulse is an open-source 3D Earth command center for live, near-live, scheduled, and reference global data. Every layer is independently switchable and the UI labels source freshness instead of pretending every provider is truly real-time.
+
+## Current v0.4
+
+### v0.4 data-correctness upgrade
+
+- **Full CelesTrak ACTIVE satellite catalog** instead of the earlier 4-group sample. GeoPulse now requests compact TLEs and renders them with Cesium point primitives so thousands of satellites remain practical.
+- **OpenSky → adsb.lol fallback** for aircraft. When OpenSky is unavailable, GeoPulse requests a bounded 250-nautical-mile live aircraft snapshot around the current map view and labels the coverage as regional fallback.
+- **Earthquake de-duplication:** earthquakes are excluded from the combined Disaster layer and remain in the dedicated USGS Earthquakes layer/feed.
+- **Expanded trade network:** 32 major reference corridors spanning the Atlantic, Pacific, Panama, Suez, Persian Gulf, Indian Ocean, Africa, South America and Australia.
+- **Live ship honesty:** the UI no longer presents missing AIS configuration as a real zero. AISStream still requires a backend API key.
+- **Latest feed cleanup:** disaster and earthquake entries no longer duplicate the same seismic event.
+
+GeoPulse does not claim that the loaded ACTIVE TLE count equals every payload or every tracked object in orbit. CelesTrak's catalog statistics include active satellites, dead satellites, rocket bodies, debris, restricted objects and other categories separately.
 
 ## Current v0.3.1
 
@@ -22,8 +35,8 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 - 🌎 Interactive CesiumJS Earth with **Satellite / Streets / Topographic** map layouts
 - 🔎 Search by **address, house number, city, place, or latitude/longitude**
-- ✈️ Live aircraft via OpenSky
-- 🛰️ Moving satellite positions propagated from CelesTrak orbital data
+- ✈️ Live aircraft via OpenSky with bounded adsb.lol fallback
+- 🛰️ Full CelesTrak ACTIVE TLE catalog with moving SGP4-propagated positions
 - 🚢 Live AIS vessel snapshots for the area currently in view (provider key required)
 - ⇄ Global trade corridors, clearly labeled as reference routes
 - ⚠️ Multi-hazard disaster layer combining NASA EONET + GDACS
@@ -97,10 +110,10 @@ Copy `.env.example` locally or add the variables in your Netlify environment set
 | Earthquakes | USGS | No | Real-time feed |
 | Natural disasters | NASA EONET | No | Near-live/source dependent |
 | Disaster alerts | GDACS | No | Frequently refreshed |
-| Satellites | CelesTrak | No | Orbital data + locally propagated position |
+| Active satellites | CelesTrak ACTIVE TLE | No | Orbital data + locally propagated position |
 | Conflict-related reporting | GDELT GEO | No | Near-live news-location signal |
-| Aircraft | OpenSky | Optional/recommended | Live, rate-limited |
-| Live ships | AISStream | Yes | Live stream snapshot |
+| Aircraft | OpenSky → adsb.lol regional fallback | OpenSky auth optional/recommended | Live / bounded fallback |
+| Live ships | AISStream | Yes | Live viewport stream snapshot; shown as unavailable until configured |
 | Detailed address search | ArcGIS World Geocoding → Photon/OpenStreetMap fallback | ArcGIS key optional | Search service |
 | Major scheduled events | Ticketmaster Discovery | Yes | Scheduled/latest event listings |
 | Trade routes | GeoPulse | No | Reference only |
