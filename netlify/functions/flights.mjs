@@ -20,6 +20,7 @@ function json(body, status = 200, headers = {}) {
 
 let tokenCache = { token: null, expiresAt: 0 };
 let lastGood = { at: 0, payload: null };
+let globalSampleCache = { at: 0, payload: null };
 
 async function getOpenSkyToken() {
   const clientId = Netlify.env.get("OPENSKY_CLIENT_ID");
@@ -166,6 +167,56 @@ async function fetchAdsbLol(lat, lon, coverageLabel) {
   };
 }
 
+const GLOBAL_SAMPLE_POINTS = [
+  { name: "US East", lat: 40.64, lon: -73.78 },
+  { name: "US Central", lat: 36.12, lon: -86.68 },
+  { name: "Europe", lat: 51.47, lon: -0.45 },
+  { name: "Middle East", lat: 25.25, lon: 55.36 },
+  { name: "East Asia", lat: 35.55, lon: 139.78 }
+];
+
+async function fetchGlobalAdsbSample() {
+  const now = Date.now();
+  if (globalSampleCache.payload && now - globalSampleCache.at < 30000) {
+    return { ...globalSampleCache.payload, cached: true };
+  }
+
+  const settled = await Promise.allSettled(
+    GLOBAL_SAMPLE_POINTS.map((point) =>
+      fetchAdsbLol(point.lat, point.lon, point.name)
+    )
+  );
+
+  const byIcao = new Map();
+  const regions = [];
+  for (let i = 0; i < settled.length; i += 1) {
+    const result = settled[i];
+    if (result.status !== "fulfilled" || !result.value) continue;
+    const payload = result.value;
+    if (payload.count > 0) regions.push(GLOBAL_SAMPLE_POINTS[i].name);
+    for (const aircraft of payload.aircraft || []) {
+      const key = String(aircraft.icao24 || "").toLowerCase();
+      if (!key) continue;
+      if (!byIcao.has(key) || Number(aircraft.seenSeconds ?? 9999) < Number(byIcao.get(key).seenSeconds ?? 9999)) {
+        byIcao.set(key, aircraft);
+      }
+    }
+  }
+
+  const aircraft = Array.from(byIcao.values()).slice(0, 3500);
+  const payload = {
+    source: "adsb.lol",
+    coverage: "live multi-region sample",
+    regions,
+    fetchedAt: new Date().toISOString(),
+    count: aircraft.length,
+    aircraft
+  };
+
+  globalSampleCache = { at: now, payload };
+  return payload;
+}
+
 async function fetchOpenSky(bounds) {
   const url = new URL("https://opensky-network.org/api/states/all");
   url.searchParams.set("extended", "1");
@@ -264,6 +315,16 @@ export default async (req, context) => {
     console.warn("adsb.lol fallback unavailable", error.message);
   }
 
+  try {
+    const globalSample = await fetchGlobalAdsbSample();
+    if (globalSample && globalSample.count > 0) {
+      lastGood = { at: Date.now(), payload: globalSample };
+      return json(globalSample, 200, { "X-Flight-Source": "adsb.lol-global-sample" });
+    }
+  } catch (error) {
+    console.warn("adsb.lol global sample unavailable", error.message);
+  }
+
   if (lastGood.payload && Date.now() - lastGood.at < 15000) {
     return json(
       { ...lastGood.payload, stale: true },
@@ -277,7 +338,7 @@ export default async (req, context) => {
       error: "No live aircraft source is currently available",
       source: "OpenSky + adsb.lol",
       hasVisitorGeo: Number.isFinite(geoLat) && Number.isFinite(geoLon),
-      hint: "Zoom toward a populated region or configure OpenSky credentials."
+      hint: "No upstream aircraft source returned positions. Try again shortly or configure OpenSky credentials."
     },
     502,
     { "Cache-Control": "no-store" }
