@@ -14,7 +14,9 @@ test('malformed and unsafe camera values are rejected', () => {
   assert.equal(share.decode('?lat=1&lon=1&alt=500&heading=0&pitch=-45&map=javascript'),null);
   assert.equal(share.decode('?lat=1&lon=1&alt=nan&heading=0&pitch=-45'),null);
 });
-test('unrelated query parameters survive view serialization', () => {
-  const out=share.build('https://example.com/?lang=en',{lat:0,lon:0,alt:300,heading:0,pitch:-90,map:'satellite'});
-  assert.equal(new URL(out).searchParams.get('lang'),'en');
+test('shared view strips unrelated query data and credentials', () => {
+  const out=share.build('https://example.com/?token=secret&lang=en#fragment',{lat:0,lon:0,alt:300,heading:0,pitch:-90,map:'satellite'});
+  assert.equal(new URL(out).searchParams.get('token'),null);
+  assert.equal(new URL(out).searchParams.get('lang'),null);
+  assert.equal(new URL(out).hash,'');
 });
