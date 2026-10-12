@@ -1,3 +1,8 @@
+<!-- DVILR PROJECT COVER v1 -->
+<p align="center"><img src="./assets/dvilr-project-banner.svg" width="100%" alt="GeoPulse: Explore live and reference global data in 3D." /></p>
+<p align="center"><a href="https://github.com/dvilrgamerz"><strong>Developer profile</strong></a> · <a href="https://github.com/dvilrgamerz/GeoPulse"><strong>Source</strong></a></p>
+<!-- /DVILR PROJECT COVER -->
+
 # 🌎 GeoPulse v0.5
 
 **Live Earth Intelligence**
