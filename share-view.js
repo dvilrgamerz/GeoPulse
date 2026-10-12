@@ -21,6 +21,9 @@
   }
   function build(base, view) {
     const url = new URL(base);
+    // Share only map position and style; never copy URL tokens, personal data, or fragments.
+    url.search = '';
+    url.hash = '';
     const params = { lat: view.lat, lon: view.lon, alt: view.alt, heading: view.heading, pitch: view.pitch, map: view.map };
     for (const [key, value] of Object.entries(params)) url.searchParams.set(key, String(value));
     if (!decode(url.search)) throw new Error('Invalid camera view');
