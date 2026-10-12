@@ -15,7 +15,7 @@
     const pitch = Number(qs.get('pitch'));
     const map = qs.get('map') || 'satellite';
     if (Math.abs(lat) > 90 || Math.abs(lon) > 180 ||
-        alt < 300 || alt > 30000000 || Math.abs(heading) > 360 ||
+        alt < 1 || alt > 30000000 || Math.abs(heading) > 360 ||
         pitch < -90 || pitch > 90 || !MAPS.has(map)) return null;
     return {lat, lon, alt, heading, pitch, map};
   }
