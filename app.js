@@ -455,9 +455,18 @@
     Object.values(layers).forEach((source) => viewer.dataSources.add(source));
     satellitePoints = viewer.scene.primitives.add(new C.PointPrimitiveCollection());
     registerDataCredits();
-    await setBasemap("satellite");
+    const shared = window.GeoPulseShare?.decode(window.location.search);
+    await setBasemap(shared ? shared.map : "satellite");
+    $("mapStyle").value = shared ? shared.map : "satellite";
 
-    viewer.camera.setView({ destination: C.Cartesian3.fromDegrees(-20, 22, 21000000) });
+    viewer.camera.setView(shared ? {
+      destination: C.Cartesian3.fromDegrees(shared.lon, shared.lat, shared.alt),
+      orientation: {
+        heading: C.Math.toRadians(shared.heading),
+        pitch: C.Math.toRadians(shared.pitch),
+        roll: 0
+      }
+    } : { destination: C.Cartesian3.fromDegrees(-20, 22, 21000000) });
     setProgress(24, "Building global command center…");
   }
 
@@ -1229,6 +1238,29 @@
     });
 
     $("mapStyle").addEventListener("change", (event) => setBasemap(event.target.value));
+    $("shareView").addEventListener("click", async () => {
+      const carto = viewer.camera.positionCartographic;
+      const view = {
+        lon: Number(C.Math.toDegrees(carto.longitude).toFixed(5)),
+        lat: Number(C.Math.toDegrees(carto.latitude).toFixed(5)),
+        alt: Math.round(carto.height),
+        heading: Number(C.Math.toDegrees(viewer.camera.heading).toFixed(2)),
+        pitch: Number(C.Math.toDegrees(viewer.camera.pitch).toFixed(2)),
+        map: currentBasemap
+      };
+      try {
+        const url = window.GeoPulseShare.build(window.location.href, view);
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(url);
+          showNotice("Camera and map link copied. Live source data may change after sharing.");
+        } else {
+          window.prompt("Copy this GeoPulse camera link:", url);
+        }
+      } catch (error) {
+        console.warn("Could not copy GeoPulse camera view", error);
+        showNotice("Unable to copy this camera view. Try a higher camera altitude or a supported browser.");
+      }
+    });
     bindObjectPicking();
     $("searchButton").addEventListener("click", runSearch);
 
