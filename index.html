@@ -136,6 +136,7 @@
           <span class="eyebrow">GLOBAL VIEW</span>
           <div class="coordinate-readout" id="cameraReadout">LAT -- · LON -- · ALT --</div>
           <div id="viewStatus" class="view-status">SATELLITE MAP · LIVE LAYERS</div>
+          <div class="earth-data-note" id="earthDataNote">Current provider imagery · capture dates vary by area</div>
         </div>
 
         <div class="map-toolbar">
@@ -147,6 +148,10 @@
               <option value="topo">Topographic</option>
             </select>
           </label>
+          <button id="tilt3D" type="button" class="earth-mode-btn" title="Fly closer to the ground and tilt camera to 3D" aria-label="Fly to oblique 3D ground view">3D VIEW</button>
+          <button id="photo3D" type="button" class="earth-mode-btn" aria-pressed="false" title="Optional photorealistic Google 3D Tiles (API billing required)">PHOTO 3D</button>
+          <button id="zoomEarthIn" type="button" class="earth-zoom" aria-label="Zoom in closer">+</button>
+          <button id="zoomEarthOut" type="button" class="earth-zoom" aria-label="Zoom out">−</button>
           <button id="shareView" type="button" title="Copy a link to this camera and basemap" aria-label="Copy shareable camera link">SHARE</button>
           <button type="button" data-fly="world" title="Global view">◎</button>
           <button type="button" data-fly="americas" title="Americas">AM</button>
@@ -212,6 +217,28 @@
     </footer>
   </main>
 
+  <div id="photo3DModal" class="modal-backdrop" hidden>
+    <section class="earth3d-dialog" role="dialog" aria-modal="true" aria-labelledby="photo3DTitle" aria-describedby="photo3DDescription">
+      <div class="earth3d-dialog-header">
+        <div>
+          <span class="eyebrow">HIGH DETAIL EARTH</span>
+          <h2 id="photo3DTitle">Photorealistic 3D Buildings</h2>
+        </div>
+        <button type="button" id="photo3DClose" class="modal-close" aria-label="Close photorealistic map settings">×</button>
+      </div>
+      <p id="photo3DDescription">Use Google's current available Photorealistic 3D Tiles to explore supported areas close to the ground. This is map imagery, <strong>not a real-time satellite image</strong>. Capture dates vary.</p>
+      <div class="earth3d-terms"><strong>Billing required:</strong> You must enable Google Maps Platform's Map Tiles API and a billing account. Tiles may cost money. Use a site-restricted API key with a daily quota. This mode is OFF until you activate it.</div>
+      <label for="photo3DKey">Your Google Maps Tile API key</label>
+      <input id="photo3DKey" type="password" inputmode="text" autocomplete="off" spellcheck="false" placeholder="Paste your own restricted key (not saved)" />
+      <small class="earth3d-privacy">The key stays in this page's memory for this visit. Requests to Google's tile servers necessarily include it. It is never stored in GeoPulse or added to share links.</small>
+      <div class="earth3d-actions">
+        <a href="https://developers.google.com/maps/documentation/tile/get-api-key" target="_blank" rel="noopener noreferrer">API setup &amp; billing details ↗</a>
+        <button id="photo3DCancel" type="button">CANCEL</button>
+        <button id="photo3DEnable" type="button">ENABLE 3D TILES</button>
+      </div>
+    </section>
+  </div>
+
   <div id="creditsModal" class="modal-backdrop" hidden>
     <section class="credits-modal" role="dialog" aria-modal="true" aria-labelledby="creditsTitle">
       <div class="credits-head">
@@ -245,6 +272,7 @@
   </div>
 
   <script src="share-view.js"></script>
+  <script src="globe-depth.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
