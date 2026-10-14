@@ -618,3 +618,13 @@ button { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .earth3d-dialog *, .map-toolbar * { transition-duration: 0.01ms !important; }
 }
+
+/* Google's required provider credits must remain visible and legible in 3D mode. */
+.photo-3d-active .cesium-widget-credits,
+.photo-3d-active .cesium-credit-expand-link,
+.photo-3d-active .cesium-credit-textContainer {
+  opacity: 1 !important;
+  font-size: 11px !important;
+  color: #fff !important;
+  text-shadow: 0 1px 3px #000;
+}
