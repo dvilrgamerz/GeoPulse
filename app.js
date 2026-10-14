@@ -11,6 +11,7 @@
   const progressMessage = $("loadingMessage");
 
   let viewer;
+  let depthController;
   let currentBasemap = "satellite";
   let feedFilter = "all";
   let feedItems = [];
@@ -415,8 +416,9 @@
       viewer.imageryLayers.removeAll();
       const layer = viewer.imageryLayers.addImageryProvider(provider);
       if (style === "satellite") {
-        layer.brightness = 0.83;
-        layer.contrast = 1.05;
+        // Neutral color correction preserves more imagery detail while diving close.
+        layer.brightness = 1.0;
+        layer.contrast = 1.03;
       }
       currentBasemap = style;
       $("viewStatus").textContent = config.label + " MAP · LIVE LAYERS";
@@ -451,6 +453,36 @@
     viewer.scene.skyAtmosphere.show = true;
     viewer.scene.fog.enabled = true;
     viewer.scene.backgroundColor = C.Color.fromCssColorString("#01060d");
+    // Keep crisp ground tiles when camera descends; the depth controller gracefully
+    // falls back to regular imagery if public elevation tiles are not available.
+    viewer.scene.globe.maximumScreenSpaceError = 1.5;
+    viewer.scene.screenSpaceCameraController.minimumZoomDistance = 2;
+
+    depthController = window.GeoPulseDepth.create({
+      Cesium: C,
+      viewer,
+      notify: showNotice,
+      onStatus: (status) => {
+        app.classList.toggle("photo-3d-active", status.photoActive);
+        const photoButton = $("photo3D");
+        if (photoButton) {
+          photoButton.classList.toggle("active", status.photoEnabled);
+          photoButton.setAttribute("aria-pressed", String(status.photoEnabled));
+          photoButton.textContent = status.photoLoading ? "3D LOADING…" : status.photoEnabled ? "3D ON" : "PHOTO 3D";
+        }
+        const indicator = $("earthDataNote");
+        if (indicator) {
+          indicator.textContent = status.photoActive
+            ? "Google Maps Photorealistic 3D Tiles · imagery dates vary · credits below"
+            : status.terrainAvailable
+              ? "Current satellite imagery + 3D elevation · image capture dates vary"
+              : "Current satellite imagery · image capture dates vary";
+        }
+        const view = $("viewStatus");
+        if (view) view.textContent = status.mode + " · " + (basemaps[currentBasemap]?.label || "SATELLITE") + " · LIVE LAYERS";
+      }
+    });
+    depthController.attach();
 
     Object.values(layers).forEach((source) => viewer.dataSources.add(source));
     satellitePoints = viewer.scene.primitives.add(new C.PointPrimitiveCollection());
@@ -1174,10 +1206,13 @@
     const cartographic = C.Cartographic.fromCartesian(viewer.camera.positionWC);
     const lat = C.Math.toDegrees(cartographic.latitude);
     const lon = C.Math.toDegrees(cartographic.longitude);
-    const altitudeKm = cartographic.height / 1000;
+    const altitudeMeters = Math.max(0, cartographic.height);
+    const altitudeKm = altitudeMeters / 1000;
+    const displayAltitude = altitudeMeters < 1000 ? Math.round(altitudeMeters) + " M"
+      : altitudeKm < 1000 ? altitudeKm.toFixed(1) + " KM"
+      : (altitudeKm / 1000).toFixed(2) + "M KM";
     $("cameraReadout").textContent =
-      "LAT " + lat.toFixed(3) + " · LON " + lon.toFixed(3) + " · ALT " +
-      (altitudeKm >= 1000 ? (altitudeKm / 1000).toFixed(1) + "K KM" : altitudeKm.toFixed(0) + " KM");
+      "LAT " + lat.toFixed(5) + " · LON " + lon.toFixed(5) + " · ALT " + displayAltitude;
   }
 
   function scheduleShipRefreshFromCamera() {
@@ -1237,7 +1272,50 @@
       });
     });
 
-    $("mapStyle").addEventListener("change", (event) => setBasemap(event.target.value));
+    $("mapStyle").addEventListener("change", async (event) => {
+      await setBasemap(event.target.value);
+      depthController.update();
+    });
+
+    $("tilt3D").addEventListener("click", () => {
+      depthController.flyToOblique();
+      showNotice("3D ground view · wheel or pinch to zoom · right-drag or Ctrl-drag to orbit");
+    });
+    $("zoomEarthIn").addEventListener("click", () => depthController.zoom(1));
+    $("zoomEarthOut").addEventListener("click", () => depthController.zoom(-1));
+
+    const photoModal = $("photo3DModal");
+    const closePhoto = () => {
+      photoModal.hidden = true;
+      $("photo3DKey").value = "";
+    };
+    $("photo3D").addEventListener("click", () => {
+      if (depthController.getStatus().photoEnabled) {
+        depthController.disablePhoto();
+        showNotice("Photorealistic 3D off · satellite imagery and terrain restored");
+      } else {
+        photoModal.hidden = false;
+        $("photo3DKey").focus();
+      }
+    });
+    $("photo3DCancel").addEventListener("click", closePhoto);
+    $("photo3DClose").addEventListener("click", closePhoto);
+    photoModal.addEventListener("click", (event) => {
+      if (event.target === photoModal) closePhoto();
+    });
+    photoModal.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closePhoto();
+    });
+    $("photo3DEnable").addEventListener("click", () => {
+      const key = $("photo3DKey").value;
+      if (!depthController.enablePhoto(key)) {
+        showNotice("Please supply a valid Maps Tile API key (restricted to this website and the Map Tiles API).");
+        return;
+      }
+      closePhoto();
+      showNotice("Photorealistic 3D armed. Zoom below 35 km to stream Google 3D buildings. Billed API calls may apply.", 6500);
+    });
+
     $("shareView").addEventListener("click", async () => {
       const carto = viewer.camera.positionCartographic;
       const view = {

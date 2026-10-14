@@ -567,3 +567,64 @@ button { cursor: pointer; }
   .object-fields { grid-template-columns: 1fr; }
   .object-field.wide { grid-column: auto; }
 }
+
+/* Deep-zoom Earth controls and cost-explicit 3D Tiles opt-in. */
+.earth-data-note { margin-top: 6px; font-size: 8px; line-height: 1.35; color: #a7d9dd; max-width: 290px; }
+.map-toolbar .earth-mode-btn { padding: 0 10px; min-width: 69px; font-size: 9px; font-weight: 750; letter-spacing: .02em; }
+.map-toolbar .earth-mode-btn.active { border-color: #50ffc0; background: rgba(22,118,95,.65); color: #b5ffe3; }
+.map-toolbar .earth-zoom { font-size: 18px; font-weight: 700; width: 35px; }
+.map-toolbar button:focus-visible, .earth3d-dialog input:focus-visible,
+.earth3d-dialog button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+.earth3d-dialog {
+  width: min(530px,100%); max-height: calc(100vh - 45px); overflow-y: auto;
+  border: 1px solid var(--line-strong); border-radius: 18px;
+  padding: 22px 24px; background: linear-gradient(130deg,#092133,#030d19);
+  box-shadow: 0 35px 90px rgba(0,0,0,.7);
+}
+.earth3d-dialog-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.earth3d-dialog h2 { font-size: 22px; line-height: 1.25; margin: 5px 0 8px; }
+.earth3d-dialog p { font-size: 13px; line-height: 1.65; color: #b3ccd6; }
+.earth3d-terms {
+  margin: 16px 0; border-left: 3px solid #ffca63; padding: 11px 14px;
+  border-radius: 0 8px 8px 0; background: rgba(255,202,99,.09);
+  font-size: 12px; line-height: 1.65; color: #ffebbc;
+}
+.earth3d-dialog label { display: block; font-weight: 750; margin: 13px 0 8px; font-size: 12px; }
+.earth3d-dialog input {
+  background: #020a14; border: 1px solid var(--line-strong);
+  border-radius: 8px; padding: 12px 14px; width: 100%; color: #edffff; font-size: 14px;
+}
+.earth3d-privacy { display: block; color: #97b5c6; font-size: 11px; line-height: 1.5; margin-top: 9px; }
+.earth3d-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 19px; }
+.earth3d-actions a { color: var(--cyan); font-size: 11px; margin-right: auto; }
+.earth3d-actions button {
+  padding: 11px 13px; border-radius: 8px; background: rgba(66,238,255,.08);
+  border: 1px solid var(--line-strong); color: #e9f9ff; font-size: 11px; font-weight: 750;
+}
+.earth3d-actions #photo3DEnable { background: #166a7f; border-color: #40dfee; }
+@media (max-width: 950px) {
+  .map-toolbar { top: 12px; flex-wrap: wrap; justify-content: flex-end; max-width: 60%; }
+  .map-toolbar .map-select-label { min-width: 145px; height: 34px; }
+  .globe-overlay.top-left { max-width: 38%; }
+}
+@media (max-width: 640px) {
+  .map-toolbar { top: 62px; right: 8px; max-width: 200px; gap: 4px; }
+  .map-toolbar .map-select-label { min-width: 180px; }
+  .map-toolbar button { height: 32px; }
+  .globe-overlay.top-left { max-width: 58%; }
+  .earth-data-note { max-width: 160px; }
+  .earth3d-dialog { padding: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .earth3d-dialog *, .map-toolbar * { transition-duration: 0.01ms !important; }
+}
+
+/* Google's required provider credits must remain visible and legible in 3D mode. */
+.photo-3d-active .cesium-widget-credits,
+.photo-3d-active .cesium-credit-expand-link,
+.photo-3d-active .cesium-credit-textContainer {
+  opacity: 1 !important;
+  font-size: 11px !important;
+  color: #fff !important;
+  text-shadow: 0 1px 3px #000;
+}

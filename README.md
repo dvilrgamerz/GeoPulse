@@ -9,6 +9,16 @@
 
 GeoPulse is an open-source 3D Earth command center for live, near-live, scheduled, and reference global data. Every layer is independently switchable and the UI labels source freshness instead of pretending every provider is truly real-time.
 
+## Close-range 3D Earth upgrade (October 2026)
+
+The 3D globe now attempts to load **actual terrain elevation** rather than using flat imagery alone. It allows much deeper zoom, automatically tilts the camera at low altitude, and adds **3D VIEW**, zoom buttons, and more accurate altitude readouts.
+
+For cities and buildings, the optional **PHOTO 3D** setting supports Google Maps Platform Photorealistic 3D Tiles in Cesium. That paid API is **disabled by default**. Users must intentionally enable it with their own referrer/API-restricted key and billing account; no API keys are committed to source or embedded in share links. If tiles or terrain cannot load, the ordinary satellite globe remains usable. Displayed tile credits are preserved.
+
+**Imagery freshness:** GeoPulse requests currently served provider maps, but imagery acquisition dates vary by region. It cannot claim that every satellite photograph is new or live.
+
+See [the 3D Earth controls, provider requirements and testing guide](docs/CLOSE_RANGE_3D.md).
+
 ## Current v0.5
 
 ### v0.5 live object inspector
