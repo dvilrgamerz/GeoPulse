@@ -463,6 +463,7 @@
       viewer,
       notify: showNotice,
       onStatus: (status) => {
+        app.classList.toggle("photo-3d-active", status.photoActive);
         const photoButton = $("photo3D");
         if (photoButton) {
           photoButton.classList.toggle("active", status.photoEnabled);
